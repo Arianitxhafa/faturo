@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f7f6f2;
+  --surface: #ffffff;
+  --surface-2: #f0efe9;
+  --fg: #14161a;
+  --muted: #6b6f76;
+  --line: #e4e2da;
+  --brand: #0f766e;
+  --brand-ink: #ffffff;
+  --brand-soft: #e1f2ef;
+  --gold: #c9a227;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0c0e10;
+    --surface: #14171a;
+    --surface-2: #1b1f23;
+    --fg: #eef0f2;
+    --muted: #8d939a;
+    --line: #262b30;
+    --brand: #2dd4bf;
+    --brand-ink: #062a26;
+    --brand-soft: #10302c;
+    --gold: #e3c15a;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-gold: var(--gold);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-rise { animation: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise { animation: none; }
+}

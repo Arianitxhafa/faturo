@@ -151,7 +151,11 @@ export async function createDemoAccount() {
 
   const invoiceRows: (typeof invoices.$inferInsert)[] = [];
   const itemRows: (typeof invoiceItems.$inferInsert)[] = [];
-  plan(now).forEach((p, i) => {
+  const planned = plan(now);
+  planned.forEach((p, i) => {
+    // The six most recent sent/paid invoices were shared with the client, and most were opened.
+    const shared = p.status !== "draft" && i >= planned.length - 7;
+    const views = shared ? [3, 1, 2, 0, 4, 1, 2][i % 7] : 0;
     const id = randomUUID();
     const lines = p.lines.map(([, quantityHundredths, unitPriceCents, vatRateBps]) => ({ quantityHundredths, unitPriceCents, vatRateBps }));
     const t = computeTotals(lines, p.discountBps ?? 0);
@@ -173,6 +177,10 @@ export async function createDemoAccount() {
       sentAt: p.status === "draft" ? null : at(p.issue, 10),
       paidAt: p.paidOn ? at(p.paidOn, 12) : null,
       createdBy: userId,
+      shareToken: shared ? createToken().token : null,
+      sharedAt: shared ? at(p.issue, 10) : null,
+      shareViews: views,
+      shareLastViewedAt: views ? at(p.paidOn ?? addDays(p.issue, 1), 8) : null,
       createdAt: at(p.issue, 9),
       updatedAt: at(p.paidOn ?? p.issue, 12),
     });
@@ -181,6 +189,8 @@ export async function createDemoAccount() {
     const meta = { number: invoiceNumberLabel(i + 1), total: formatMoney(t.totalCents, "EUR"), client: CLIENTS[p.clientIdx].name };
     add(author, "invoice.created", at(p.issue, 9), meta, "invoice", id);
     if (p.status !== "draft") add(author, "invoice.sent", at(p.issue, 10), meta, "invoice", id);
+    if (shared) add(userId, "invoice.shared", at(p.issue, 10), meta, "invoice", id);
+    if (views) log.push({ workspaceId, actorId: null, action: "invoice.viewed", createdAt: at(addDays(p.issue, 1), 8), meta, entityType: "invoice", entityId: id });
     if (p.paidOn) add(userId, "invoice.paid", at(p.paidOn, 12), meta, "invoice", id);
     p.lines.forEach(([description, quantityHundredths, unitPriceCents, vatRateBps], position) =>
       itemRows.push({ invoiceId: id, position, description, quantityHundredths, unitPriceCents, vatRateBps, lineTotalCents: t.lineTotals[position] })

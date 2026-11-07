@@ -7,7 +7,8 @@ import { hasRole, requireMembership } from "@/lib/session";
 import { formatMoney, invoiceNumberLabel } from "@/lib/money";
 import { today } from "@/lib/invoice-status";
 import { StatusBadge } from "@/components/StatusBadge";
-import { primaryButton } from "@/components/ui";
+import { primaryButton, secondaryButton } from "@/components/ui";
+import { FileDown } from "lucide-react";
 
 export const metadata: Metadata = { title: "Invoices" };
 
@@ -50,11 +51,18 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
           <p className="text-xs font-semibold tracking-[0.14em] text-brand uppercase">Invoices</p>
           <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">Your invoices</h1>
         </div>
-        {hasRole(role, "admin") && (
-          <Link href="/app/invoices/new" className={primaryButton}>
-            + New invoice
-          </Link>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {rows.length > 0 && (
+            <a href={`/app/invoices/export${tab === "all" ? "" : `?status=${tab}`}`} className={secondaryButton} download>
+              <FileDown className="size-4" aria-hidden /> Export CSV
+            </a>
+          )}
+          {hasRole(role, "admin") && (
+            <Link href="/app/invoices/new" className={primaryButton}>
+              + New invoice
+            </Link>
+          )}
+        </div>
       </div>
 
       <nav aria-label="Filter by status" className="flex gap-1 overflow-x-auto rounded-xl bg-surface-2 p-1">

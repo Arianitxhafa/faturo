@@ -16,7 +16,7 @@ const NAV: NavItem[] = [
   { href: "/app/clients", label: "Clients", icon: Users, ready: true },
   { href: "/app/team", label: "Team", icon: UsersRound, ready: true },
   { href: "/app/activity", label: "Activity", icon: History, ready: true },
-  { href: "/app/settings", label: "Settings", icon: Settings, ready: false },
+  { href: "/app/settings", label: "Settings", icon: Settings, ready: true },
   { href: "/app/billing", label: "Billing", icon: CreditCard, ready: true },
 ];
 

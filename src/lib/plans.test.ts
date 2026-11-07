@@ -49,3 +49,22 @@ test("only test cards are accepted, with realistic declines", () => {
   assert.match((card("4242424242424242", "12/30", "1") as { error: string }).error, /security code/);
   assert.equal(card("4242424242424242", "11/26").ok, true); // valid through the end of this month
 });
+
+import { centsToDecimal, csvCell, toCsv } from "./csv.ts";
+
+test("CSV cells are quoted and formula-safe", () => {
+  assert.equal(csvCell("Hotel Sharri"), "Hotel Sharri");
+  assert.equal(csvCell('Kafe "Prishtina", Rr. UÇK'), '"Kafe ""Prishtina"", Rr. UÇK"');
+  assert.equal(csvCell("line\nbreak"), '"line\nbreak"');
+  assert.equal(csvCell("=HYPERLINK(\"http://evil\")"), `"'=HYPERLINK(""http://evil"")"`);
+  assert.equal(csvCell("-10"), "'-10"); // text that looks like a formula
+  assert.equal(csvCell(-10), "-10"); // real numbers stay numbers
+  assert.equal(csvCell(null), "");
+  assert.equal(centsToDecimal(123450), "1234.50");
+  assert.equal(centsToDecimal(5), "0.05");
+});
+
+test("CSV file: BOM, header, CRLF", () => {
+  const csv = toCsv([["Number", "Client"], ["INV-0001", "Arbën"]]);
+  assert.equal(csv, "﻿Number,Client\r\nINV-0001,Arbën\r\n");
+});

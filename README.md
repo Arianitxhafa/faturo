@@ -4,9 +4,9 @@
 
 > **Live:** **[faturo-two.vercel.app](https://faturo-two.vercel.app)** — click **Try the live demo** to explore a pre-filled workspace without signing up.
 >
-> **Status:** in development — foundation, clients & invoices, dashboard, redesign, demo, team and billing done; public links and CSV export next. See [docs/PLAN.md](docs/PLAN.md) for the full roadmap.
+> **Status:** v1 complete — all six phases from [docs/PLAN.md](docs/PLAN.md) are built, tested end to end and live.
 
-## ✨ Done so far
+## ✨ Features
 - Email and password accounts with **Auth.js v5** — scrypt-hashed passwords, JWT sessions, generic login errors
 - **Multi-tenant workspaces** — onboarding creates a business workspace and makes you its owner
 - Roles (owner / admin / member) and plans (free / pro) in the schema, enforced through one data-access helper
@@ -25,8 +25,11 @@
 - **Multiple workspaces** — one account can belong to several businesses, with a workspace switcher
 - **Activity log** — who created, edited, sent, paid or deleted what (and team changes), written in the same atomic batch as the change; a timeline per invoice
 - **Plans & billing** — Free (5 invoices a month, just you) and Pro (€9/month, unlimited invoices and team), enforced on the server with upgrade prompts at each limit. Checkout, cancel at period end, resume, monthly renewals with billing history, and an automatic drop to Free after a cancellation — behind a provider interface. Stripe doesn't onboard businesses in Kosovo, so checkout runs as a clearly labelled **test-mode simulation** that accepts only Stripe's test cards (e.g. `4242 4242 4242 4242`) and stores just the card brand and last 4 digits
+- **Public invoice links** (Pro) — an unguessable link where the client views the invoice, copies the IBAN and payment reference, and downloads the PDF without an account; views are counted (team previews excluded) and the first open lands in the activity log; links pause for drafts, can be turned off or rotated, and stop on the Free plan
+- **CSV export** — for the accountant, respecting the current status filter: UTF-8 BOM for Excel, plain decimal amounts, and formula-injection protection (`=HYPERLINK(...)` in a client name is neutralised)
+- **Settings** — business name, address, tax number, IBAN and currency
 - **Login rate limiting** — 5 failed attempts per account (and 30 per IP) in 15 minutes, enforced inside Auth.js so the API endpoint is protected too
-- **Unit tests** for money, VAT, discounts, parsing, overdue logic, role rules, invite tokens, redirects, rate limits, plan limits, billing periods and test cards (`npm test`)
+- **Unit tests** for money, VAT, discounts, parsing, overdue logic, role rules, invite tokens, redirects, rate limits, plan limits, billing periods, test cards and CSV escaping (`npm test`); end-to-end suites drive real browsers through every phase
 
 ## 🛠 Tech stack
 | Layer | Technology |

@@ -21,6 +21,10 @@ export const ACTIONS = [
   "member.role_changed",
   "member.removed",
   "member.left",
+  "invoice.shared",
+  "invoice.unshared",
+  "invoice.viewed",
+  "workspace.updated",
   "billing.upgraded",
   "billing.canceled",
   "billing.resumed",
@@ -84,6 +88,14 @@ export function describeActivity(action: string, meta: ActivityMeta, entityId: s
       return { tone: "danger", segments: [{ text: "removed " }, { text: s(meta.name), strong: true }, { text: " from the team" }] };
     case "member.left":
       return { tone: "danger", segments: [{ text: "left the team" }] };
+    case "invoice.shared":
+      return { tone: "invoice", segments: [{ text: "shared a public link to " }, invoice()] };
+    case "invoice.unshared":
+      return { tone: "danger", segments: [{ text: "turned off the public link to " }, invoice()] };
+    case "invoice.viewed":
+      return { tone: "payment", segments: [{ text: s(meta.client), strong: true }, { text: " opened " }, invoice(), { text: " for the first time 👀" }] };
+    case "workspace.updated":
+      return { tone: "workspace", segments: [{ text: "updated the business details" }] };
     case "billing.upgraded":
       return { tone: "payment", segments: [{ text: "upgraded to " }, { text: "Pro", strong: true, href: "/app/billing" }, ...amount, { text: " ✨" }] };
     case "billing.canceled":

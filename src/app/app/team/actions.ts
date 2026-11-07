@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
+import { requestOrigin } from "@/lib/origin";
 import { redirect } from "next/navigation";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -22,13 +23,6 @@ const inviteSchema = z.object({
   role: z.enum(["admin", "member"]),
 });
 
-/** The absolute origin of this request, for building the invite link. */
-async function origin() {
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
-}
 
 export async function createInvite(_prev: InviteFormState, formData: FormData): Promise<InviteFormState> {
   const { user, workspace, role } = await requireMembership("admin");
@@ -66,7 +60,7 @@ export async function createInvite(_prev: InviteFormState, formData: FormData): 
     activityInsert({ workspaceId: workspace.id, actorId: user.id, action: "member.invited", entityType: "invite", meta: { email, role: inviteRole } }),
   ]);
   revalidatePath("/app/team");
-  return { link: `${await origin()}/invite/${token}`, email, role: inviteRole };
+  return { link: `${await requestOrigin()}/invite/${token}`, email, role: inviteRole };
 }
 
 export async function revokeInvite(id: string): Promise<Result> {

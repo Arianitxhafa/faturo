@@ -2,28 +2,13 @@
 
 import { redirect } from "next/navigation";
 import { and, count, eq } from "drizzle-orm";
-import { z } from "zod";
 import { db } from "@/db";
-import { currencyEnum, memberships, workspaces } from "@/db/schema";
+import { memberships, workspaces } from "@/db/schema";
+import { workspaceSchema } from "@/lib/workspace-schema";
 import { hasAnyWorkspace, requireUser, setCurrentWorkspace, userExists } from "@/lib/session";
 import { activityInsert } from "@/lib/activity";
 
 export type OnboardingState = { error?: string } | undefined;
-
-const optional = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .transform((v) => v || null);
-
-const workspaceSchema = z.object({
-  name: z.string().trim().min(2, "Enter your business name.").max(100),
-  currency: z.enum(currencyEnum.enumValues),
-  address: optional(200),
-  taxNumber: optional(40),
-  iban: optional(40),
-});
 
 export async function createWorkspace(_prev: OnboardingState, formData: FormData): Promise<OnboardingState> {
   const user = await requireUser();

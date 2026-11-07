@@ -12,6 +12,7 @@ import { getInvoice, isUniqueViolation, nextInvoiceNumber } from "@/lib/invoices
 import { isIsoDate, today } from "@/lib/invoice-status";
 import { activityInsert, invoiceMeta } from "@/lib/activity";
 import { invoiceLimit } from "@/lib/billing";
+import { createToken } from "@/lib/tokens";
 import { invoiceNumberLabel } from "@/lib/money";
 import type { Action } from "@/lib/activity-format";
 
@@ -265,4 +266,39 @@ export async function duplicateInvoice(id: string) {
   }
   revalidatePath("/app/invoices");
   redirect(`/app/invoices/${newId}/edit`);
+}
+
+/** Pro: turn on a public link (sent or paid invoices only). Returns the token. */
+export async function shareInvoice(id: string): Promise<{ error?: string; token?: string }> {
+  const { user, workspace } = await requireMembership("admin");
+  if (workspace.plan !== "pro") return { error: "Public links are a Pro feature." };
+  const found = await getInvoice(workspace.id, id);
+  if (!found) return { error: "Invoice not found." };
+  if (found.invoice.status === "draft") return { error: "Mark the invoice as sent before sharing it." };
+  if (found.invoice.shareToken) return { token: found.invoice.shareToken };
+
+  const token = createToken().token; // 32 random bytes, unguessable
+  await db.batch([
+    db
+      .update(invoices)
+      .set({ shareToken: token, sharedAt: new Date(), shareViews: 0, shareLastViewedAt: null })
+      .where(and(eq(invoices.id, id), eq(invoices.workspaceId, workspace.id))),
+    activityInsert({ workspaceId: workspace.id, actorId: user.id, action: "invoice.shared", entityType: "invoice", entityId: id, meta: invoiceMeta(found.invoice, found.client.name) }),
+  ]);
+  revalidatePath(`/app/invoices/${id}`);
+  return { token };
+}
+
+/** Turn the public link off; the old URL stops working immediately. */
+export async function unshareInvoice(id: string): Promise<{ error?: string }> {
+  const { user, workspace } = await requireMembership("admin");
+  const found = await getInvoice(workspace.id, id);
+  if (!found) return { error: "Invoice not found." };
+  if (!found.invoice.shareToken) return {};
+  await db.batch([
+    db.update(invoices).set({ shareToken: null }).where(and(eq(invoices.id, id), eq(invoices.workspaceId, workspace.id))),
+    activityInsert({ workspaceId: workspace.id, actorId: user.id, action: "invoice.unshared", entityType: "invoice", entityId: id, meta: invoiceMeta(found.invoice, found.client.name) }),
+  ]);
+  revalidatePath(`/app/invoices/${id}`);
+  return {};
 }

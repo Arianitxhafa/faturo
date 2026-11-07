@@ -84,6 +84,11 @@ export const invoices = pgTable(
     createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    // Public link (Pro): an unguessable token in the URL; null when sharing is off.
+    shareToken: text("share_token").unique(),
+    sharedAt: timestamp("shared_at", { withTimezone: true }),
+    shareViews: integer("share_views").notNull().default(0),
+    shareLastViewedAt: timestamp("share_last_viewed_at", { withTimezone: true }),
   },
   (t) => [
     uniqueIndex("invoices_workspace_number_idx").on(t.workspaceId, t.number),

@@ -32,7 +32,7 @@ function Entry({ entry, now, showActor = true }: { entry: ActivityEntry; now: Da
       </span>
       <div className="min-w-0 flex-1 pt-1 text-sm">
         <p className="leading-snug">
-          {showActor && (entry.actorName || !entry.action.startsWith("billing.")) && <span className="font-semibold">{entry.actorName ?? "A former member"} </span>}
+          {showActor && (entry.actorName || !(entry.action.startsWith("billing.") || entry.action === "invoice.viewed")) && <span className="font-semibold">{entry.actorName ?? "A former member"} </span>}
           {d.segments.map((seg, i) =>
             seg.href ? (
               <Link key={i} href={seg.href} className="font-semibold text-brand underline-offset-4 hover:underline">

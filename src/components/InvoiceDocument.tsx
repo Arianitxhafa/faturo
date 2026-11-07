@@ -12,17 +12,6 @@ export function InvoiceDocument({ workspace, client, invoice, items, stamp }: Pr
 
   return (
     <article className="relative overflow-hidden rounded-2xl bg-white p-6 text-[#14161a] shadow-[0_30px_70px_-35px_rgb(22_24_27/0.45)] ring-1 ring-black/5 animate-[rise_0.6s_0.1s_cubic-bezier(0.22,1,0.36,1)_both] sm:p-10">
-      {stamp && (
-        <div
-          className={`pointer-events-none absolute bottom-[10%] left-[8%] rounded-xl border-[4px] px-5 py-1.5 font-display text-5xl tracking-[0.18em] uppercase opacity-80 mix-blend-multiply animate-stamp sm:text-6xl ${
-            stamp === "paid" ? "border-emerald-700 text-emerald-700" : "border-[#b42318] text-[#b42318]"
-          }`}
-          style={{ animationDelay: "350ms" }}
-          aria-hidden
-        >
-          {stamp}
-        </div>
-      )}
       <header className="flex flex-wrap items-start justify-between gap-6">
         <div>
           <p className="text-xl font-bold">{workspace.name}</p>
@@ -30,7 +19,7 @@ export function InvoiceDocument({ workspace, client, invoice, items, stamp }: Pr
             {[workspace.address, workspace.taxNumber && `Tax no. ${workspace.taxNumber}`].filter(Boolean).join("\n")}
           </p>
         </div>
-        <div className="text-right">
+        <div className="sm:text-right">
           <p className="text-xs font-semibold tracking-[0.2em] text-[#0f766e] uppercase">Invoice</p>
           <p className="mt-1 text-2xl font-bold">{invoiceNumberLabel(invoice.number)}</p>
         </div>
@@ -77,30 +66,44 @@ export function InvoiceDocument({ workspace, client, invoice, items, stamp }: Pr
         </table>
       </div>
 
-      <dl className="mt-6 ml-auto grid max-w-xs gap-1.5 text-sm">
-        <div className="flex justify-between">
-          <dt className="text-[#6b6f76]">Subtotal</dt>
-          <dd className="tabular-nums">{money(invoice.subtotalCents)}</dd>
-        </div>
-        {invoice.discountCents > 0 && (
-          <div className="flex justify-between">
-            <dt className="text-[#6b6f76]">Discount ({formatRate(invoice.discountBps)})</dt>
-            <dd className="tabular-nums">−{money(invoice.discountCents)}</dd>
+      {/* The stamp sits left of the totals, so it never covers dates, items or notes. */}
+      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4">
+        {stamp && (
+          <div
+            className={`pointer-events-none ml-[4%] shrink-0 rounded-xl border-[4px] px-5 py-1.5 font-display text-5xl tracking-[0.18em] uppercase opacity-80 mix-blend-multiply animate-stamp max-sm:text-4xl sm:text-6xl ${
+              stamp === "paid" ? "border-emerald-700 text-emerald-700" : "border-[#b42318] text-[#b42318]"
+            }`}
+            style={{ animationDelay: "350ms" }}
+            aria-hidden
+          >
+            {stamp}
           </div>
         )}
-        {vatGroups
-          .filter((g) => g.rateBps > 0)
-          .map((g) => (
-            <div key={g.rateBps} className="flex justify-between">
-              <dt className="text-[#6b6f76]">VAT {formatRate(g.rateBps)}</dt>
-              <dd className="tabular-nums">{money(g.vatCents)}</dd>
+        <dl className="ml-auto grid w-full max-w-xs gap-1.5 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-[#6b6f76]">Subtotal</dt>
+            <dd className="tabular-nums">{money(invoice.subtotalCents)}</dd>
+          </div>
+          {invoice.discountCents > 0 && (
+            <div className="flex justify-between">
+              <dt className="text-[#6b6f76]">Discount ({formatRate(invoice.discountBps)})</dt>
+              <dd className="tabular-nums">−{money(invoice.discountCents)}</dd>
             </div>
-          ))}
-        <div className="mt-1 flex justify-between border-t-2 border-[#14161a] pt-2 text-lg font-bold">
-          <dt>Total</dt>
-          <dd className="tabular-nums">{money(invoice.totalCents)}</dd>
-        </div>
-      </dl>
+          )}
+          {vatGroups
+            .filter((g) => g.rateBps > 0)
+            .map((g) => (
+              <div key={g.rateBps} className="flex justify-between">
+                <dt className="text-[#6b6f76]">VAT {formatRate(g.rateBps)}</dt>
+                <dd className="tabular-nums">{money(g.vatCents)}</dd>
+              </div>
+            ))}
+          <div className="mt-1 flex justify-between border-t-2 border-[#14161a] pt-2 text-lg font-bold">
+            <dt>Total</dt>
+            <dd className="tabular-nums">{money(invoice.totalCents)}</dd>
+          </div>
+        </dl>
+      </div>
 
       {(invoice.notes || workspace.iban) && (
         <footer className="mt-10 border-t border-[#e4e2da] pt-4 text-sm text-[#6b6f76]">

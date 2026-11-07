@@ -25,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <span className="font-semibold">You&apos;re exploring a demo workspace.</span>{" "}
               <span className="text-muted">Change anything you like — it&apos;s deleted after 24 hours.</span>
             </p>
-            <form action={leaveDemoAction}>
+            <form action={leaveDemoAction} className="max-sm:basis-full max-sm:pl-8">
               <button className="font-semibold text-brand underline-offset-4 hover:underline">Create your own account →</button>
             </form>
           </div>

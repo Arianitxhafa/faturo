@@ -8,21 +8,18 @@ import { formatMoney, invoiceNumberLabel } from "@/lib/money";
 import { InvoiceDocument } from "@/components/InvoiceDocument";
 import { Logo } from "@/components/Logo";
 import { CopyIban } from "./CopyIban";
+import { getLocale, getTr } from "@/i18n/server";
+import { Preferences } from "@/components/Preferences";
+import { formatDate, formatDay } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
-const day = (d: string | Date) =>
-  (typeof d === "string" ? new Date(`${d}T00:00:00Z`) : d).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: typeof d === "string" ? "UTC" : "Europe/Belgrade",
-  });
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
   const found = await findSharedInvoice((await params).token);
+  const tr = await getTr();
   return {
-    title: found ? `${invoiceNumberLabel(found.invoice.number)} from ${found.workspace.name}` : "Invoice",
+    title: found ? tr("{number} from {workspace}", { number: invoiceNumberLabel(found.invoice.number), workspace: found.workspace.name }) : tr("Invoice"),
     robots: { index: false, follow: false },
   };
 }
@@ -37,13 +34,16 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
   await recordShareView(invoice, client.name, session?.user?.id);
 
   const status = displayStatus(invoice.status, invoice.dueDate);
+  const [tr, locale] = [await getTr(), await getLocale()];
+  const style = { day: true, month: "long", year: true } as const;
+  const day = (d: string | Date) => (typeof d === "string" ? formatDay(d, locale, style) : formatDate(d, locale, style));
   const total = formatMoney(invoice.totalCents, invoice.currency);
   const banner =
     status === "paid"
-      ? { icon: CircleCheckBig, tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300", text: `Paid${invoice.paidAt ? ` on ${day(invoice.paidAt)}` : ""} — thank you!` }
+      ? { icon: CircleCheckBig, tone: "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300", text: invoice.paidAt ? tr("Paid on {date} — thank you!", { date: day(invoice.paidAt) }) : tr("Paid — thank you!") }
       : status === "overdue"
-        ? { icon: AlertTriangle, tone: "border-stamp/30 bg-stamp/10 text-stamp", text: `${total} was due on ${day(invoice.dueDate)}.` }
-        : { icon: Clock, tone: "border-sky-500/30 bg-sky-500/10 text-sky-800 dark:text-sky-300", text: `${total} due on ${day(invoice.dueDate)}.` };
+        ? { icon: AlertTriangle, tone: "border-stamp/30 bg-stamp/10 text-stamp", text: tr("{total} was due on {date}.", { total, date: day(invoice.dueDate) }) }
+        : { icon: Clock, tone: "border-sky-500/30 bg-sky-500/10 text-sky-800 dark:text-sky-300", text: tr("{total} due on {date}.", { total, date: day(invoice.dueDate) }) };
   const Icon = banner.icon;
 
   return (
@@ -53,12 +53,15 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
           <div className="min-w-0">
             <p className="truncate font-display text-2xl leading-none">{workspace.name}</p>
             <p className="mt-1 text-xs text-muted">
-              Invoice {invoiceNumberLabel(invoice.number)} for {client.name}
+              {tr("Invoice {number} for {client}", { number: invoiceNumberLabel(invoice.number), client: client.name })}
             </p>
           </div>
+          <div className="flex items-center gap-2">
+          <Preferences />
           <a href={`/i/${token}/pdf`} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-brand-ink transition hover:brightness-110 active:scale-[0.98]">
-            <Download className="size-4" aria-hidden /> Download PDF
+            <Download className="size-4" aria-hidden /> {tr("Download PDF")}
           </a>
+          </div>
         </div>
       </header>
 
@@ -74,9 +77,9 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
 
       <footer className="mt-auto border-t border-line">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-xs text-muted sm:px-6">
-          <span>This page is private to the people {workspace.name} shares it with.</span>
+          <span>{tr("This page is private to the people {workspace} shares it with.", { workspace: workspace.name })}</span>
           <span className="inline-flex items-center gap-2">
-            Sent with <Logo />
+            {tr("Sent with")} <Logo />
           </span>
         </div>
       </footer>

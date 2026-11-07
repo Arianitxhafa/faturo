@@ -4,6 +4,7 @@ import { useActionState, useMemo, useState, useTransition } from "react";
 import { saveInvoice } from "@/app/app/invoices/actions";
 import { computeTotals, formatMoney, formatRate, parseMoney, parsePercent, parseQuantity, VAT_RATES_BPS } from "@/lib/money";
 import { inputClass, primaryButton } from "./ui";
+import { useTr } from "@/i18n/client";
 
 type Line = { key: number; description: string; quantity: string; unitPrice: string; vatRateBps: number };
 
@@ -30,6 +31,7 @@ const cell = "w-full rounded-lg border border-line bg-surface px-2.5 py-2 text-s
 
 export function InvoiceEditor({ clients, currency, initial }: Props) {
   const [state, action, pending] = useActionState(saveInvoice, undefined);
+  const tr = useTr();
   const [, start] = useTransition();
   const [clientId, setClientId] = useState(initial.clientId);
   const [issueDate, setIssueDate] = useState(initial.issueDate);
@@ -74,10 +76,10 @@ export function InvoiceEditor({ clients, currency, initial }: Props) {
     >
       <section className="grid gap-4 rounded-2xl border border-line bg-surface p-5 sm:grid-cols-3">
         <label className="grid gap-1.5 text-sm font-medium sm:col-span-3">
-          Client *
+          {tr("Client *")}
           <select value={clientId} onChange={(e) => setClientId(e.target.value)} required className={inputClass}>
             <option value="" disabled>
-              Choose a client…
+              {tr("Choose a client…")}
             </option>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
@@ -87,43 +89,43 @@ export function InvoiceEditor({ clients, currency, initial }: Props) {
           </select>
         </label>
         <label className="grid gap-1.5 text-sm font-medium">
-          Issue date
+          {tr("Issue date")}
           <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} required className={inputClass} />
         </label>
         <label className="grid gap-1.5 text-sm font-medium">
-          Due date
+          {tr("Due date")}
           <input type="date" value={dueDate} min={issueDate} onChange={(e) => setDueDate(e.target.value)} required className={inputClass} />
         </label>
         <label className="grid gap-1.5 text-sm font-medium">
-          Discount %
+          {tr("Discount %")}
           <input inputMode="decimal" value={discount} onChange={(e) => setDiscount(e.target.value)} placeholder="0" className={inputClass} />
         </label>
       </section>
 
       <section className="rounded-2xl border border-line bg-surface p-5">
         <div className="hidden grid-cols-[1fr_90px_120px_90px_110px_32px] gap-2 pb-2 text-xs font-medium tracking-wider text-muted uppercase md:grid">
-          <span>Description</span>
-          <span>Qty</span>
-          <span>Unit price</span>
-          <span>VAT</span>
-          <span className="text-right">Amount</span>
+          <span>{tr("Description")}</span>
+          <span>{tr("Qty")}</span>
+          <span>{tr("Unit price")}</span>
+          <span>{tr("VAT")}</span>
+          <span className="text-right">{tr("Amount")}</span>
           <span />
         </div>
         <ul className="grid gap-3 md:gap-2">
           {lines.map((line, i) => (
             <li key={line.key} className="grid grid-cols-2 gap-2 rounded-xl border border-line p-3 md:grid-cols-[1fr_90px_120px_90px_110px_32px] md:items-center md:border-0 md:p-0">
               <input
-                aria-label={`Line ${i + 1} description`}
+                aria-label={tr("Line {n} description", { n: i + 1 })}
                 value={line.description}
                 onChange={(e) => update(line.key, { description: e.target.value })}
-                placeholder="Website design"
+                placeholder={tr("Website design")}
                 maxLength={300}
                 required
                 className={`${cell} col-span-2 md:col-span-1`}
               />
-              <input aria-label={`Line ${i + 1} quantity`} inputMode="decimal" value={line.quantity} onChange={(e) => update(line.key, { quantity: e.target.value })} className={cell} />
-              <input aria-label={`Line ${i + 1} unit price`} inputMode="decimal" value={line.unitPrice} onChange={(e) => update(line.key, { unitPrice: e.target.value })} placeholder="0.00" className={cell} />
-              <select aria-label={`Line ${i + 1} VAT rate`} value={line.vatRateBps} onChange={(e) => update(line.key, { vatRateBps: Number(e.target.value) })} className={cell}>
+              <input aria-label={tr("Line {n} quantity", { n: i + 1 })} inputMode="decimal" value={line.quantity} onChange={(e) => update(line.key, { quantity: e.target.value })} className={cell} />
+              <input aria-label={tr("Line {n} unit price", { n: i + 1 })} inputMode="decimal" value={line.unitPrice} onChange={(e) => update(line.key, { unitPrice: e.target.value })} placeholder="0.00" className={cell} />
+              <select aria-label={tr("Line {n} VAT rate", { n: i + 1 })} value={line.vatRateBps} onChange={(e) => update(line.key, { vatRateBps: Number(e.target.value) })} className={cell}>
                 {VAT_RATES_BPS.map((r) => (
                   <option key={r} value={r}>
                     {formatRate(r)}
@@ -135,7 +137,7 @@ export function InvoiceEditor({ clients, currency, initial }: Props) {
                 type="button"
                 onClick={() => setLines((ls) => (ls.length === 1 ? ls : ls.filter((l) => l.key !== line.key)))}
                 disabled={lines.length === 1}
-                aria-label={`Remove line ${i + 1}`}
+                aria-label={tr("Remove line {n}", { n: i + 1 })}
                 className="grid size-8 place-items-center justify-self-end rounded-lg text-muted transition hover:bg-red-500/10 hover:text-red-600 disabled:opacity-30"
               >
                 ✕
@@ -144,17 +146,17 @@ export function InvoiceEditor({ clients, currency, initial }: Props) {
           ))}
         </ul>
         <button type="button" onClick={() => setLines((ls) => [...ls, blankLine()])} disabled={lines.length >= 50} className="mt-3 text-sm font-semibold text-brand hover:underline">
-          + Add line
+          {tr("+ Add line")}
         </button>
 
         <dl className="mt-6 ml-auto grid max-w-xs gap-1.5 text-sm">
           <div className="flex justify-between">
-            <dt className="text-muted">Subtotal</dt>
+            <dt className="text-muted">{tr("Subtotal")}</dt>
             <dd className="tabular-nums">{money(preview.subtotalCents)}</dd>
           </div>
           {preview.discountCents > 0 && (
             <div className="flex justify-between">
-              <dt className="text-muted">Discount ({formatRate(parsePercent(discount) ?? 0)})</dt>
+              <dt className="text-muted">{tr("Discount ({rate})", { rate: formatRate(parsePercent(discount) ?? 0) })}</dt>
               <dd className="tabular-nums">−{money(preview.discountCents)}</dd>
             </div>
           )}
@@ -162,31 +164,31 @@ export function InvoiceEditor({ clients, currency, initial }: Props) {
             .filter((g) => g.rateBps > 0)
             .map((g) => (
               <div key={g.rateBps} className="flex justify-between">
-                <dt className="text-muted">VAT {formatRate(g.rateBps)}</dt>
+                <dt className="text-muted">{tr("VAT {rate}", { rate: formatRate(g.rateBps) })}</dt>
                 <dd className="tabular-nums">{money(g.vatCents)}</dd>
               </div>
             ))}
           <div className="mt-1 flex justify-between border-t border-line pt-2 text-base font-bold">
-            <dt>Total</dt>
+            <dt>{tr("Total")}</dt>
             <dd className="tabular-nums">{money(preview.totalCents)}</dd>
           </div>
         </dl>
       </section>
 
       <label className="grid gap-1.5 text-sm font-medium">
-        Notes
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={2000} placeholder="Payment details, thank-you note…" className={`${inputClass} resize-y`} />
+        {tr("Notes")}
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} maxLength={2000} placeholder={tr("Payment details, thank-you note…")} className={`${inputClass} resize-y`} />
       </label>
 
       {state?.error && (
         <p role="alert" className="rounded-xl bg-red-500/10 px-3.5 py-2.5 text-sm text-red-700 dark:text-red-400">
-          {state.error}
+          {tr(state.error)}
         </p>
       )}
 
       <div className="flex justify-end">
         <button type="submit" disabled={pending} className={`${primaryButton} px-6`}>
-          {pending ? "Saving…" : initial.id ? "Save invoice" : "Create invoice"}
+          {pending ? tr("Saving…") : initial.id ? tr("Save invoice") : tr("Create invoice")}
         </button>
       </div>
     </form>

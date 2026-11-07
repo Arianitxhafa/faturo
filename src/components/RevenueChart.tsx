@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatMoney } from "@/lib/money";
 import { monthLabel } from "@/lib/months";
+import { useLocale, useTr } from "@/i18n/client";
 
 type Point = { month: string; cents: number; count: number };
 
@@ -21,6 +22,9 @@ function niceMax(v: number) {
 
 export function RevenueChart({ data, currency }: { data: Point[]; currency: string }) {
   const [active, setActive] = useState<number | null>(null);
+  const tr = useTr();
+  const locale = useLocale();
+  const label = (month: string, year = false) => monthLabel(month, year, locale);
   const max = niceMax(Math.max(...data.map((d) => d.cents)));
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
@@ -35,7 +39,7 @@ export function RevenueChart({ data, currency }: { data: Point[]; currency: stri
 
   return (
     <figure className="relative m-0">
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Paid revenue per month for the last 12 months" onMouseLeave={() => setActive(null)}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={tr("Paid revenue per month for the last 12 months")} onMouseLeave={() => setActive(null)}>
         {ticks.map((t) => (
           <g key={t}>
             <line x1={PAD.left} x2={W - PAD.right} y1={y(t)} y2={y(t)} stroke="var(--line)" strokeWidth={1} />
@@ -63,7 +67,7 @@ export function RevenueChart({ data, currency }: { data: Point[]; currency: stri
                 />
               )}
               <text x={x + barW / 2} y={H - 8} textAnchor="middle" fill={isCurrent ? "var(--fg)" : "var(--muted)"} fontSize={11} fontWeight={isCurrent ? 600 : 400}>
-                {monthLabel(d.month)}
+                {label(d.month)}
               </text>
               {/* Hit target: the whole column, bigger than the bar. */}
               <rect
@@ -76,7 +80,7 @@ export function RevenueChart({ data, currency }: { data: Point[]; currency: stri
                 onFocus={() => setActive(i)}
                 onBlur={() => setActive(null)}
                 tabIndex={0}
-                aria-label={`${monthLabel(d.month, true)}: ${formatMoney(d.cents, currency)} from ${d.count} paid invoice${d.count === 1 ? "" : "s"}`}
+                aria-label={tr(d.count === 1 ? "{month}: {amount} from {n} paid invoice" : "{month}: {amount} from {n} paid invoices", { month: label(d.month, true), amount: formatMoney(d.cents, currency), n: d.count })}
               />
             </g>
           );
@@ -88,34 +92,34 @@ export function RevenueChart({ data, currency }: { data: Point[]; currency: stri
           className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-lg border border-line bg-surface px-3 py-2 text-xs shadow-lg"
           style={{ left: `${((PAD.left + (active! + 0.5) * slot) / W) * 100}%` }}
         >
-          <p className="font-semibold">{monthLabel(point.month, true)}</p>
+          <p className="font-semibold">{label(point.month, true)}</p>
           <p className="tabular-nums">{formatMoney(point.cents, currency)}</p>
           <p className="text-muted">
-            {point.count} paid invoice{point.count === 1 ? "" : "s"}
+            {tr(point.count === 1 ? "{n} paid invoice" : "{n} paid invoices", { n: point.count })}
           </p>
         </div>
       )}
 
       {empty && (
         <figcaption className="absolute inset-0 grid place-items-center text-center text-sm text-muted">
-          Revenue appears here when invoices are marked as paid.
+          {tr("Revenue appears here when invoices are marked as paid.")}
         </figcaption>
       )}
 
       {/* Same data as a table for screen readers. */}
       <table className="sr-only">
-        <caption>Paid revenue per month</caption>
+        <caption>{tr("Paid revenue per month")}</caption>
         <thead>
           <tr>
-            <th>Month</th>
-            <th>Revenue</th>
-            <th>Paid invoices</th>
+            <th>{tr("Month")}</th>
+            <th>{tr("Revenue")}</th>
+            <th>{tr("Paid invoices")}</th>
           </tr>
         </thead>
         <tbody>
           {data.map((d) => (
             <tr key={d.month}>
-              <td>{monthLabel(d.month, true)}</td>
+              <td>{label(d.month, true)}</td>
               <td>{formatMoney(d.cents, currency)}</td>
               <td>{d.count}</td>
             </tr>

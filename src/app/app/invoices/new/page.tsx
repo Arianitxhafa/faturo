@@ -6,11 +6,14 @@ import { clients } from "@/db/schema";
 import { requireMembership } from "@/lib/session";
 import { addDays, today } from "@/lib/invoice-status";
 import { InvoiceEditor } from "@/components/InvoiceEditor";
+import { getTr } from "@/i18n/server";
 import { UpgradeCard } from "@/components/billing/UpgradeCard";
 import { getUsage } from "@/lib/billing";
 import { PLAN_LIMITS } from "@/lib/plans";
 
-export const metadata: Metadata = { title: "New invoice" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTr())("New invoice") };
+}
 
 export default async function NewInvoicePage({ searchParams }: { searchParams: Promise<{ client?: string }> }) {
   const { workspace, role } = await requireMembership("admin");
@@ -25,32 +28,33 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: P
   const usage = workspace.plan === "free" ? await getUsage(workspace.id) : null;
   const limit = PLAN_LIMITS.free.invoicesPerMonth;
   const blocked = usage !== null && usage.invoicesThisMonth >= limit;
+  const tr = await getTr();
 
   return (
     <div className="mx-auto grid max-w-4xl gap-5">
       <div>
         <Link href="/app/invoices" className="text-sm text-muted hover:text-fg">
-          ← Invoices
+          {tr("← Invoices")}
         </Link>
-        <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">New invoice</h1>
+        <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">{tr("New invoice")}</h1>
       </div>
       {usage && !blocked && (
         <p className="-mt-2 text-sm text-muted">
-          {usage.invoicesThisMonth} of {limit} free invoices used this month.
+          {tr("{used} of {limit} free invoices used this month.", { used: usage.invoicesThisMonth, limit })}
         </p>
       )}
       {blocked ? (
         <UpgradeCard
-          title={`You've used all ${limit} free invoices this month`}
-          body="Upgrade to Pro for unlimited invoices — or wait until next month, when your free invoices reset."
+          title={tr("You've used all {limit} free invoices this month", { limit })}
+          body={tr("Upgrade to Pro for unlimited invoices — or wait until next month, when your free invoices reset.")}
           isOwner={role === "owner"}
         />
       ) : clientList.length === 0 ? (
         <div className="grid place-items-center gap-2 rounded-2xl border border-dashed border-line bg-surface px-6 py-14 text-center">
-          <p className="font-semibold">Add a client first</p>
-          <p className="text-sm text-muted">Every invoice is addressed to a client.</p>
+          <p className="font-semibold">{tr("Add a client first")}</p>
+          <p className="text-sm text-muted">{tr("Every invoice is addressed to a client.")}</p>
           <Link href="/app/clients" className="mt-1 text-sm font-semibold text-brand hover:underline">
-            Add a client →
+            {tr("Add a client →")}
           </Link>
         </div>
       ) : (
@@ -62,7 +66,7 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: P
             issueDate: issue,
             dueDate: addDays(issue, 15),
             discount: "",
-            notes: workspace.iban ? `Please pay by bank transfer to IBAN ${workspace.iban}.` : "",
+            notes: workspace.iban ? tr("Please pay by bank transfer to IBAN {iban}.", { iban: workspace.iban }) : "",
             items: [],
           }}
         />

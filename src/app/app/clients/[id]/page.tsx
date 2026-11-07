@@ -10,13 +10,17 @@ import { ClientForm } from "@/components/ClientForm";
 import { DeleteClientButton } from "./DeleteClientButton";
 import { StatusBadge } from "@/components/StatusBadge";
 import { isUuid } from "@/lib/invoices";
+import { getTr } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Client" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTr())("Client") };
+}
 
 export default async function ClientPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { workspace, role } = await requireMembership();
   const canEdit = hasRole(role, "admin");
+  const tr = await getTr();
   if (!isUuid(id)) notFound();
 
   const [client] = await db
@@ -36,14 +40,14 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
     <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_320px]">
       <section>
         <Link href="/app/clients" className="text-sm text-muted hover:text-fg">
-          ← All clients
+          {tr("← All clients")}
         </Link>
         <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">{client.name}</h1>
-        <p className="mt-1 text-sm text-muted">{[client.email, client.address, client.taxNumber && `Tax no. ${client.taxNumber}`].filter(Boolean).join(" · ") || "No contact details yet"}</p>
+        <p className="mt-1 text-sm text-muted">{[client.email, client.address, client.taxNumber && tr("Tax no. {n}", { n: client.taxNumber })].filter(Boolean).join(" · ") || tr("No contact details yet")}</p>
 
-        <h2 className="mt-6 mb-2 text-sm font-semibold tracking-wider text-muted uppercase">Invoices</h2>
+        <h2 className="mt-6 mb-2 text-sm font-semibold tracking-wider text-muted uppercase">{tr("Invoices")}</h2>
         {clientInvoices.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-line p-6 text-center text-sm text-muted">No invoices for this client yet.</p>
+          <p className="rounded-2xl border border-dashed border-line p-6 text-center text-sm text-muted">{tr("No invoices for this client yet.")}</p>
         ) : (
           <ul className="divide-y divide-line rounded-2xl border border-line bg-surface shadow-card animate-rise [animation-delay:120ms]">
             {clientInvoices.map((inv) => (
@@ -61,7 +65,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
       {canEdit && (
         <aside className="grid h-fit gap-4 rounded-2xl border border-line bg-surface p-5 lg:mt-8">
-          <h2 className="font-semibold">Edit client</h2>
+          <h2 className="font-semibold">{tr("Edit client")}</h2>
           <ClientForm client={client} />
           <div className="border-t border-line pt-4">
             <DeleteClientButton id={client.id} hasInvoices={clientInvoices.length > 0} />

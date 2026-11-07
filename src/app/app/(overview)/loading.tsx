@@ -1,7 +1,10 @@
 // Shown instantly while an app page loads its data on the server.
-export default function Loading() {
+import { getTr } from "@/i18n/server";
+
+export default async function Loading() {
+  const tr = await getTr();
   return (
-    <div className="mx-auto grid max-w-6xl gap-6" aria-busy="true" aria-label="Loading">
+    <div className="mx-auto grid max-w-6xl gap-6" aria-busy="true" aria-label={tr("Loading")}>
       <div className="grid gap-3">
         <div className="skeleton h-3 w-24" />
         <div className="skeleton h-11 w-72" />

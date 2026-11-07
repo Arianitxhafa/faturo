@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { inputClass, primaryButton } from "@/components/ui";
 import { PasswordInput } from "@/components/PasswordInput";
 import type { AuthState } from "./actions";
+import { useTr } from "@/i18n/client";
 
 type Props = {
   mode: "login" | "signup";
@@ -20,6 +21,7 @@ type Props = {
 export function AuthForm({ mode, action, callbackUrl, invite, email }: Props) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const signup = mode === "signup";
+  const tr = useTr();
 
   return (
     <form action={formAction} className="grid gap-4">
@@ -27,33 +29,33 @@ export function AuthForm({ mode, action, callbackUrl, invite, email }: Props) {
       {invite && <input type="hidden" name="invite" value={invite} />}
       {signup && (
         <label className="grid gap-1.5 text-sm font-medium">
-          Your name
+          {tr("Your name")}
           <input name="name" required autoComplete="name" defaultValue={state?.values?.name} placeholder="Arbën Krasniqi" className={inputClass} />
         </label>
       )}
       <label className="grid gap-1.5 text-sm font-medium">
-        Email
+        {tr("Email")}
         <input name="email" type="email" required autoComplete="email" defaultValue={state?.values?.email ?? email} placeholder="you@business.com" className={inputClass} />
       </label>
       <PasswordInput
-        label="Password"
+        label={tr("Password")}
         autoComplete={signup ? "new-password" : "current-password"}
         minLength={signup ? 8 : undefined}
-        placeholder={signup ? "At least 8 characters" : "••••••••"}
+        placeholder={signup ? tr("At least 8 characters") : "••••••••"}
       />
 
       {state?.error && (
         <p role="alert" className="rounded-xl bg-red-500/10 px-3.5 py-2.5 text-sm text-red-700 dark:text-red-400">
-          {state.error}
+          {tr(state.error)}
         </p>
       )}
 
       <button type="submit" disabled={pending} className={`${primaryButton} mt-1`}>
-        {pending ? "Please wait…" : signup ? "Create account" : "Log in"}
+        {pending ? tr("Please wait…") : signup ? tr("Create account") : tr("Log in")}
       </button>
 
       <p className="text-center text-sm text-muted">
-        {signup ? "Already have an account? " : "New to Faturo? "}
+        {signup ? tr("Already have an account? ") : tr("New to Faturo? ")}
         <Link
           href={
             signup
@@ -62,7 +64,7 @@ export function AuthForm({ mode, action, callbackUrl, invite, email }: Props) {
           }
           className="font-semibold text-brand hover:underline"
         >
-          {signup ? "Log in" : "Create a free account"}
+          {signup ? tr("Log in") : tr("Create a free account")}
         </Link>
       </p>
     </form>

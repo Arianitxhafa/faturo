@@ -1,5 +1,6 @@
 import type { InvoiceStatus } from "@/db/schema";
 import { displayStatus, type DisplayStatus } from "@/lib/invoice-status";
+import { getT } from "@/i18n/server";
 
 const STYLES: Record<DisplayStatus, string> = {
   draft: "bg-surface-2 text-muted",
@@ -8,12 +9,13 @@ const STYLES: Record<DisplayStatus, string> = {
   paid: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
 };
 
-export function StatusBadge({ status, dueDate }: { status: InvoiceStatus; dueDate: string }) {
+export async function StatusBadge({ status, dueDate }: { status: InvoiceStatus; dueDate: string }) {
   const s = displayStatus(status, dueDate);
+  const labels = (await getT()).status;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full font-sans tracking-normal px-2.5 py-0.5 text-xs font-semibold capitalize ${STYLES[s]}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full font-sans tracking-normal px-2.5 py-0.5 text-xs font-semibold ${STYLES[s]}`}>
       <span className={`size-1.5 rounded-full bg-current ${s === "overdue" ? "animate-pulse" : ""}`} aria-hidden />
-      {s}
+      {labels[s]}
     </span>
   );
 }

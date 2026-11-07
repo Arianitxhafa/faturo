@@ -5,6 +5,7 @@ import { requireMembership } from "@/lib/session";
 import { displayStatus, today } from "@/lib/invoice-status";
 import { invoiceNumberLabel } from "@/lib/money";
 import { centsToDecimal, toCsv } from "@/lib/csv";
+import { getLocale, getT, getTr } from "@/i18n/server";
 
 const TABS = ["all", "draft", "sent", "overdue", "paid"] as const;
 type Tab = (typeof TABS)[number];
@@ -29,11 +30,13 @@ export async function GET(request: Request) {
     .where(and(...filters))
     .orderBy(desc(invoices.number));
 
+  const [tr, dict, locale] = [await getTr(), await getT(), await getLocale()];
   const csv = toCsv([
-    ["Number", "Status", "Client", "Client tax number", "Client email", "Issue date", "Due date", "Currency", "Subtotal", "Discount", "VAT", "Total", "Sent on", "Paid on"],
+    ["Number", "Status", "Client", "Client tax number", "Client email", "Issue date", "Due date", "Currency", "Subtotal", "Discount", "VAT", "Total", "Sent on", "Paid on"].map((h) => tr(h)),
     ...rows.map(({ invoice: i, clientName, clientTax, clientEmail }) => [
       invoiceNumberLabel(i.number),
-      displayStatus(i.status, i.dueDate, now),
+      // English keeps the plain machine-friendly status; Albanian gets the translated label.
+      locale === "sq" ? dict.status[displayStatus(i.status, i.dueDate, now)] : displayStatus(i.status, i.dueDate, now),
       clientName,
       clientTax,
       clientEmail,

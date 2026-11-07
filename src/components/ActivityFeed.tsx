@@ -2,6 +2,10 @@ import Link from "next/link";
 import { Building2, CircleCheckBig, FileText, Trash2, UserPlus, Users, type LucideIcon } from "lucide-react";
 import { describeActivity, relativeTime, type Tone } from "@/lib/activity-format";
 import type { ActivityEntry } from "@/lib/activity";
+import { getLocale, getTr } from "@/i18n/server";
+import { formatDate, formatDay } from "@/lib/dates";
+import type { Tr } from "@/i18n/tr";
+import type { Locale } from "@/i18n/config";
 
 const TONE: Record<Tone, { icon: LucideIcon; className: string }> = {
   invoice: { icon: FileText, className: "bg-sky-100 text-sky-700 dark:bg-sky-400/15 dark:text-sky-300" },
@@ -14,16 +18,16 @@ const TONE: Record<Tone, { icon: LucideIcon; className: string }> = {
 
 const dayKey = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Belgrade" }).format(d);
 
-function dayLabel(key: string, now: Date) {
+function dayLabel(key: string, now: Date, tr: Tr, locale: Locale) {
   const today = dayKey(now);
   const yesterday = dayKey(new Date(now.getTime() - 86_400_000));
-  if (key === today) return "Today";
-  if (key === yesterday) return "Yesterday";
-  return new Date(`${key}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  if (key === today) return tr("Today");
+  if (key === yesterday) return tr("Yesterday");
+  return formatDay(key, locale, { weekday: "long", day: true, month: "long", year: true });
 }
 
-function Entry({ entry, now, showActor = true }: { entry: ActivityEntry; now: Date; showActor?: boolean }) {
-  const d = describeActivity(entry.action, entry.meta, entry.entityId, entry.linkable);
+function Entry({ entry, now, tr, locale, showActor = true }: { entry: ActivityEntry; now: Date; tr: Tr; locale: Locale; showActor?: boolean }) {
+  const d = describeActivity(entry.action, entry.meta, entry.entityId, entry.linkable, tr);
   const { icon: Icon, className } = TONE[d.tone];
   return (
     <li className="relative flex gap-3 pb-5 last:pb-0">
@@ -32,7 +36,7 @@ function Entry({ entry, now, showActor = true }: { entry: ActivityEntry; now: Da
       </span>
       <div className="min-w-0 flex-1 pt-1 text-sm">
         <p className="leading-snug">
-          {showActor && (entry.actorName || !(entry.action.startsWith("billing.") || entry.action === "invoice.viewed")) && <span className="font-semibold">{entry.actorName ?? "A former member"} </span>}
+          {showActor && (entry.actorName || !(entry.action.startsWith("billing.") || entry.action === "invoice.viewed")) && <span className="font-semibold">{entry.actorName ?? tr("A former member")} </span>}
           {d.segments.map((seg, i) =>
             seg.href ? (
               <Link key={i} href={seg.href} className="font-semibold text-brand underline-offset-4 hover:underline">
@@ -47,8 +51,8 @@ function Entry({ entry, now, showActor = true }: { entry: ActivityEntry; now: Da
             )
           )}
         </p>
-        <time dateTime={entry.createdAt.toISOString()} title={entry.createdAt.toLocaleString("en-GB", { timeZone: "Europe/Belgrade" })} className="text-xs text-muted">
-          {relativeTime(entry.createdAt, now)}
+        <time dateTime={entry.createdAt.toISOString()} title={formatDate(entry.createdAt, locale, { day: true, month: "long", year: true, time: true })} className="text-xs text-muted">
+          {relativeTime(entry.createdAt, now, locale)}
         </time>
       </div>
     </li>
@@ -56,13 +60,14 @@ function Entry({ entry, now, showActor = true }: { entry: ActivityEntry; now: Da
 }
 
 /** A vertical timeline, grouped by day (Kosovo time). */
-export function ActivityFeed({ entries, now = new Date(), grouped = true }: { entries: ActivityEntry[]; now?: Date; grouped?: boolean }) {
+export async function ActivityFeed({ entries, now = new Date(), grouped = true }: { entries: ActivityEntry[]; now?: Date; grouped?: boolean }) {
+  const [tr, locale] = [await getTr(), await getLocale()];
   const line = "relative before:absolute before:top-2 before:bottom-2 before:left-4 before:w-px before:bg-line";
   if (!grouped) {
     return (
       <ol className={line}>
         {entries.map((e) => (
-          <Entry key={e.id} entry={e} now={now} />
+          <Entry key={e.id} entry={e} now={now} tr={tr} locale={locale} />
         ))}
       </ol>
     );
@@ -75,11 +80,11 @@ export function ActivityFeed({ entries, now = new Date(), grouped = true }: { en
   return (
     <div className="grid gap-7">
       {[...days].map(([key, list]) => (
-        <section key={key} aria-label={dayLabel(key, now)}>
-          <h3 className="mb-3 text-xs font-semibold tracking-[0.14em] text-muted uppercase">{dayLabel(key, now)}</h3>
+        <section key={key} aria-label={dayLabel(key, now, tr, locale)}>
+          <h3 className="mb-3 text-xs font-semibold tracking-[0.14em] text-muted uppercase">{dayLabel(key, now, tr, locale)}</h3>
           <ol className={line}>
             {list.map((e) => (
-              <Entry key={e.id} entry={e} now={now} />
+              <Entry key={e.id} entry={e} now={now} tr={tr} locale={locale} />
             ))}
           </ol>
         </section>

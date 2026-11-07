@@ -6,13 +6,17 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { memberships, users } from "@/db/schema";
 import { findInvite } from "@/lib/invites";
-import { ROLE_DESCRIPTION, ROLE_LABEL } from "@/lib/permissions";
+import { ROLE_DESCRIPTION } from "@/lib/permissions";
 import { Logo } from "@/components/Logo";
 import { primaryButton, secondaryButton } from "@/components/ui";
 import { AcceptInviteButton } from "./AcceptInvite";
 import { switchAccount } from "./actions";
+import { getT, getTr } from "@/i18n/server";
+import { Preferences } from "@/components/Preferences";
 
-export const metadata: Metadata = { title: "Team invite", robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTr())("Team invite"), robots: { index: false } };
+}
 
 const ROLE_ICON = { owner: Crown, admin: ShieldCheck, member: Eye } as const;
 
@@ -27,8 +31,9 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="paper-grain flex flex-1 flex-col items-center justify-center px-4 py-16">
       <div className="w-full max-w-md animate-rise">
-        <div className="mb-8 flex justify-center">
+        <div className="mb-8 flex items-center justify-between gap-3">
           <Logo />
+          <Preferences />
         </div>
         <div className="rounded-3xl border border-line bg-surface p-6 shadow-card sm:p-10">{children}</div>
       </div>
@@ -39,6 +44,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const found = await findInvite(token);
+  const [tr, dict] = [await getTr(), await getT()];
 
   if (!found || found.state !== "valid") {
     const dead = DEAD[found?.state ?? "missing"];
@@ -47,10 +53,10 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         <span className="grid size-12 place-items-center rounded-2xl bg-stamp/10 text-stamp">
           <Link2Off className="size-6" aria-hidden />
         </span>
-        <h1 className="mt-5 font-display text-4xl leading-none tracking-tight">{dead.title}</h1>
-        <p className="mt-3 text-sm text-muted">{dead.body}</p>
+        <h1 className="mt-5 font-display text-4xl leading-none tracking-tight">{tr(dead.title)}</h1>
+        <p className="mt-3 text-sm text-muted">{tr(dead.body)}</p>
         <Link href="/" className={`${secondaryButton} mt-6 w-full`}>
-          Go to Faturo
+          {tr("Go to Faturo")}
         </Link>
       </Shell>
     );
@@ -72,11 +78,10 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   return (
     <Shell>
-      <p className="text-xs font-semibold tracking-[0.14em] text-brand uppercase">You&apos;re invited</p>
-      <h1 className="mt-2 font-display text-4xl leading-none tracking-tight">Join {workspaceName}</h1>
+      <p className="text-xs font-semibold tracking-[0.14em] text-brand uppercase">{tr("You're invited")}</p>
+      <h1 className="mt-2 font-display text-4xl leading-none tracking-tight">{tr("Join {workspace}", { workspace: workspaceName })}</h1>
       <p className="mt-3 text-sm text-muted">
-        <strong className="text-fg">{inviterName ?? "A teammate"}</strong> invited <strong className="text-fg">{invite.email}</strong> to work together on
-        invoices in Faturo.
+        {tr("{inviter} invited {email} to work together on invoices in Faturo.", { inviter: inviterName ?? tr("A teammate"), email: invite.email })}
       </p>
 
       <div className="mt-5 flex gap-3 rounded-2xl border border-line bg-surface-2/60 p-4">
@@ -84,8 +89,8 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
           <RoleIcon className="size-4" aria-hidden />
         </span>
         <p className="text-sm">
-          <span className="font-semibold">Role: {ROLE_LABEL[invite.role]}</span>
-          <span className="block text-muted">{ROLE_DESCRIPTION[invite.role]}</span>
+          <span className="font-semibold">{tr("Role: {role}", { role: dict.roles[invite.role] })}</span>
+          <span className="block text-muted">{tr(ROLE_DESCRIPTION[invite.role])}</span>
         </p>
       </div>
 
@@ -93,24 +98,24 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         {!me ? (
           <div className="grid gap-2">
             <Link href={`/signup?invite=${token}`} className={`${primaryButton} w-full py-3 text-base`}>
-              Create an account to join
+              {tr("Create an account to join")}
             </Link>
             <Link href={`/login?callbackUrl=${encodeURIComponent(back)}`} className={`${secondaryButton} w-full`}>
-              I already have an account
+              {tr("I already have an account")}
             </Link>
           </div>
         ) : wrongAccount ? (
           <div className="grid gap-3">
             <p role="alert" className="rounded-xl bg-amber-500/10 px-3.5 py-2.5 text-sm text-amber-800 dark:text-amber-300">
-              This invite is for <strong>{invite.email}</strong>, but you&apos;re signed in as <strong>{me.email}</strong>.
+              {tr("This invite is for {invited}, but you're signed in as {me}.", { invited: invite.email, me: me.email })}
             </p>
             <form action={switchAccount.bind(null, token)}>
-              <button className={`${secondaryButton} w-full`}>Log in with {invite.email}</button>
+              <button className={`${secondaryButton} w-full`}>{tr("Log in with {email}", { email: invite.email })}</button>
             </form>
           </div>
         ) : already ? (
           <div className="grid gap-3">
-            <p className="text-sm text-muted">You&apos;re already on this team.</p>
+            <p className="text-sm text-muted">{tr("You're already on this team.")}</p>
             <AcceptInviteButton token={token} workspaceName={workspaceName} />
           </div>
         ) : (

@@ -4,6 +4,7 @@
    "Paper & ink": warm paper surfaces, deep ink text, an emerald brand
    and a stamp red reserved for overdue/destructive states. */
 :root {
+  color-scheme: light;
   --bg: #f4f1ea;
   --surface: #fffdf8;
   --surface-2: #efebe2;
@@ -19,8 +20,27 @@
   --shadow: 0 1px 2px rgb(22 24 27 / 0.04), 0 8px 24px -12px rgb(22 24 27 / 0.12);
 }
 
+/* Dark tokens: chosen explicitly (data-theme="dark") or following the system when no choice is saved. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b0d0c;
+  --surface: #121513;
+  --surface-2: #1a1e1c;
+  --fg: #ecebe6;
+  --muted: #8f948f;
+  --line: #262b29;
+  --brand: #34d3b4;
+  --brand-ink: #052a23;
+  --brand-soft: #0f2e28;
+  --gold: #e0b75a;
+  --stamp: #f97066;
+  --chart: #22a99a; /* validated vs dark surface */
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px -16px rgb(0 0 0 / 0.6);
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --bg: #0b0d0c;
     --surface: #121513;
     --surface-2: #1a1e1c;
@@ -34,6 +54,18 @@
     --stamp: #f97066;
     --chart: #22a99a; /* validated vs dark surface */
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px -16px rgb(0 0 0 / 0.6);
+  }
+}
+
+/* Tailwind `dark:` follows the same rule. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
   }
 }
 

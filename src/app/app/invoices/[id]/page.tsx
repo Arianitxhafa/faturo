@@ -14,10 +14,12 @@ import { card } from "@/components/ui";
 import { SharePanel } from "@/components/SharePanel";
 import { requestOrigin } from "@/lib/origin";
 import { relativeTime } from "@/lib/activity-format";
+import { getLocale, getTr } from "@/i18n/server";
+import { formatDate } from "@/lib/dates";
 
-export const metadata: Metadata = { title: "Invoice" };
-
-const stamp = (d: Date | null) => (d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Belgrade" }) : null);
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTr())("Invoice") };
+}
 
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,20 +28,22 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   if (!found) notFound();
   const { invoice, client, items } = found;
   const [history, origin] = await Promise.all([getActivity(workspace.id, { entityId: invoice.id, limit: 20 }), requestOrigin()]);
+  const [tr, locale] = [await getTr(), await getLocale()];
+  const stamp = (d: Date | null) => (d ? formatDate(d, locale) : null);
 
   return (
     <div className="mx-auto grid max-w-4xl gap-5">
       <PageHeader
-        label="Invoice"
-        back={{ href: "/app/invoices", label: "Invoices" }}
+        label={tr("Invoice")}
+        back={{ href: "/app/invoices", label: tr("Invoices") }}
         title={
           <span className="flex flex-wrap items-center gap-3">
             {invoiceNumberLabel(invoice.number)} <StatusBadge status={invoice.status} dueDate={invoice.dueDate} />
           </span>
         }
         description={
-          [stamp(invoice.sentAt) && `Sent ${stamp(invoice.sentAt)}`, stamp(invoice.paidAt) && `Paid ${stamp(invoice.paidAt)}`].filter(Boolean).join(" · ") ||
-          `Draft for ${client.name} — not sent yet`
+          [stamp(invoice.sentAt) && tr("Sent {date}", { date: stamp(invoice.sentAt)! }), stamp(invoice.paidAt) && tr("Paid {date}", { date: stamp(invoice.paidAt)! })].filter(Boolean).join(" · ") ||
+          tr("Draft for {client} — not sent yet", { client: client.name })
         }
         actions={<InvoiceActions id={invoice.id} status={invoice.status} canEdit={hasRole(role, "admin")} />}
       />
@@ -58,12 +62,12 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         origin={origin}
         token={invoice.shareToken}
         views={invoice.shareViews}
-        lastViewed={invoice.shareLastViewedAt ? relativeTime(invoice.shareLastViewedAt) : null}
+        lastViewed={invoice.shareLastViewedAt ? relativeTime(invoice.shareLastViewedAt, undefined, locale) : null}
       />
       {history.entries.length > 0 && (
         <section className={`${card} animate-rise p-5 sm:p-7 [animation-delay:250ms]`} aria-labelledby="history-heading">
           <h2 id="history-heading" className="mb-4 font-display text-2xl">
-            History
+            {tr("History")}
           </h2>
           <ActivityFeed entries={history.entries} grouped={false} />
         </section>

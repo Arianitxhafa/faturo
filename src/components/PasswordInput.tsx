@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/i18n/client";
 import { useEffect, useId, useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { inputClass } from "./ui";
@@ -29,6 +30,7 @@ export function PasswordInput({ label, name = "password", autoComplete, placehol
     return () => form.removeEventListener("submit", hide);
   }, []);
 
+  const tr = useTr();
   const checkCaps = (e: React.KeyboardEvent<HTMLInputElement>) => setCapsLock(e.getModifierState?.("CapsLock") ?? false);
 
   return (
@@ -59,10 +61,10 @@ export function PasswordInput({ label, name = "password", autoComplete, placehol
             setVisible((v) => !v);
             ref.current?.focus();
           }}
-          aria-label={visible ? "Hide password" : "Show password"}
+          aria-label={visible ? tr("Hide password") : tr("Show password")}
           aria-pressed={visible}
           aria-controls={id}
-          title={visible ? "Hide password" : "Show password"}
+          title={visible ? tr("Hide password") : tr("Show password")}
           className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-xl text-muted transition hover:text-fg focus-visible:text-brand focus-visible:outline-none"
         >
           {visible ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
@@ -70,7 +72,7 @@ export function PasswordInput({ label, name = "password", autoComplete, placehol
       </div>
       {(hint || capsLock) && (
         <p id={`${id}-hint`} className={`text-xs font-normal ${capsLock ? "text-amber-700 dark:text-amber-400" : "text-muted"}`}>
-          {capsLock ? "Caps Lock is on." : hint}
+          {capsLock ? tr("Caps Lock is on.") : hint}
         </p>
       )}
     </div>

@@ -8,8 +8,11 @@ import { requireMembership } from "@/lib/session";
 import { getInvoice } from "@/lib/invoices";
 import { formatQuantity, invoiceNumberLabel } from "@/lib/money";
 import { InvoiceEditor } from "@/components/InvoiceEditor";
+import { getTr } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Edit invoice" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTr())("Edit invoice") };
+}
 
 const plain = (cents: number) => (cents / 100).toFixed(2);
 
@@ -26,6 +29,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
     .where(eq(clients.workspaceId, workspace.id))
     .orderBy(asc(clients.name));
   const { invoice, items } = found;
+  const tr = await getTr();
 
   return (
     <div className="mx-auto grid max-w-4xl gap-5">
@@ -33,7 +37,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
         <Link href={`/app/invoices/${id}`} className="text-sm text-muted hover:text-fg">
           ← {invoiceNumberLabel(invoice.number)}
         </Link>
-        <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">Edit {invoiceNumberLabel(invoice.number)}</h1>
+        <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">{tr("Edit {number}", { number: invoiceNumberLabel(invoice.number) })}</h1>
       </div>
       <InvoiceEditor
         clients={clientList}

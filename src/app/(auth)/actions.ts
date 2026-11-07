@@ -13,6 +13,7 @@ import { loginBlocked } from "@/lib/login-guard";
 import { clientIp } from "@/lib/rate-limit";
 import { safeCallbackUrl } from "@/lib/redirects";
 import { isTokenShaped } from "@/lib/tokens";
+import { getLocale } from "@/i18n/server";
 
 // Echo back what the user typed so the form keeps it after an error.
 export type AuthState = { error?: string; values?: { name?: string; email?: string } } | undefined;
@@ -65,7 +66,7 @@ export type DemoState = { error?: string } | undefined;
 export async function startDemoAction(): Promise<DemoState> {
   let creds: { email: string; password: string };
   try {
-    creds = await createDemoAccount();
+    creds = await createDemoAccount(await getLocale());
   } catch (error) {
     console.error("demo setup failed", error);
     return { error: "The demo is busy right now — please try again in a minute." };

@@ -2,6 +2,9 @@ import path from "node:path";
 import { Document, Font, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { Client, Invoice, InvoiceItem, Workspace } from "@/db/schema";
 import { computeTotals, formatMoney, formatQuantity, formatRate, invoiceNumberLabel } from "@/lib/money";
+import { makeTr, type Tr } from "@/i18n/tr";
+import type { Locale } from "@/i18n/config";
+import { formatDay } from "@/lib/dates";
 
 // Embed Inter so ë, ç, € and other non-ASCII characters render correctly (built-in PDF fonts can't).
 const fontDir = path.join(process.cwd(), "src/lib/pdf/fonts");
@@ -43,15 +46,15 @@ const s = StyleSheet.create({
   footer: { marginTop: 36, paddingTop: 10, borderTopWidth: 0.75, borderTopColor: LINE, color: MUTED },
 });
 
-const date = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
-type Props = { workspace: Workspace; client: Client; invoice: Invoice; items: InvoiceItem[] };
+type Props = { workspace: Workspace; client: Client; invoice: Invoice; items: InvoiceItem[]; tr?: Tr; locale?: Locale };
 
-export function InvoicePdf({ workspace, client, invoice, items }: Props) {
+export function InvoicePdf({ workspace, client, invoice, items, tr = makeTr("en"), locale = "en" }: Props) {
+  const date = (d: string) => formatDay(d, locale, { day: true, month: "long", year: true });
   const money = (c: number) => formatMoney(c, invoice.currency);
   const { vatGroups } = computeTotals(items, invoice.discountBps);
-  const from = [workspace.address, workspace.taxNumber && `Tax no. ${workspace.taxNumber}`].filter(Boolean).join("\n");
-  const to = [client.address, client.email, client.taxNumber && `Tax no. ${client.taxNumber}`].filter(Boolean).join("\n");
+  const from = [workspace.address, workspace.taxNumber && tr("Tax no. {n}", { n: workspace.taxNumber })].filter(Boolean).join("\n");
+  const to = [client.address, client.email, client.taxNumber && tr("Tax no. {n}", { n: client.taxNumber })].filter(Boolean).join("\n");
 
   return (
     <Document title={`${invoiceNumberLabel(invoice.number)} — ${workspace.name}`} author={workspace.name} creator="Faturo">
@@ -62,35 +65,35 @@ export function InvoicePdf({ workspace, client, invoice, items }: Props) {
             {from ? <Text style={[s.muted, { marginTop: 3 }]}>{from}</Text> : null}
           </View>
           <View>
-            <Text style={s.invoiceLabel}>INVOICE</Text>
+            <Text style={s.invoiceLabel}>{tr("Invoice").toUpperCase()}</Text>
             <Text style={s.number}>{invoiceNumberLabel(invoice.number)}</Text>
           </View>
         </View>
 
         <View style={[s.row, { marginTop: 28 }]}>
           <View style={{ maxWidth: 260 }}>
-            <Text style={s.label}>Bill to</Text>
+            <Text style={s.label}>{tr("Bill to")}</Text>
             <Text style={[s.bold, { marginTop: 3 }]}>{client.name}</Text>
             {to ? <Text style={s.muted}>{to}</Text> : null}
           </View>
           <View style={{ width: 180 }}>
             <View style={s.totalRow}>
-              <Text style={s.muted}>Issue date</Text>
+              <Text style={s.muted}>{tr("Issue date")}</Text>
               <Text>{date(invoice.issueDate)}</Text>
             </View>
             <View style={s.totalRow}>
-              <Text style={s.muted}>Due date</Text>
+              <Text style={s.muted}>{tr("Due date")}</Text>
               <Text style={s.bold}>{date(invoice.dueDate)}</Text>
             </View>
           </View>
         </View>
 
         <View style={s.tableHead}>
-          <Text style={[s.th, s.cDesc]}>Description</Text>
-          <Text style={[s.th, s.cQty]}>Qty</Text>
-          <Text style={[s.th, s.cPrice]}>Unit price</Text>
-          <Text style={[s.th, s.cVat]}>VAT</Text>
-          <Text style={[s.th, s.cAmount]}>Amount</Text>
+          <Text style={[s.th, s.cDesc]}>{tr("Description")}</Text>
+          <Text style={[s.th, s.cQty]}>{tr("Qty")}</Text>
+          <Text style={[s.th, s.cPrice]}>{tr("Unit price")}</Text>
+          <Text style={[s.th, s.cVat]}>{tr("VAT")}</Text>
+          <Text style={[s.th, s.cAmount]}>{tr("Amount")}</Text>
         </View>
         {items.map((item) => (
           <View key={item.id} style={s.tableRow} wrap={false}>
@@ -104,12 +107,12 @@ export function InvoicePdf({ workspace, client, invoice, items }: Props) {
 
         <View style={s.totals} wrap={false}>
           <View style={s.totalRow}>
-            <Text style={s.muted}>Subtotal</Text>
+            <Text style={s.muted}>{tr("Subtotal")}</Text>
             <Text>{money(invoice.subtotalCents)}</Text>
           </View>
           {invoice.discountCents > 0 ? (
             <View style={s.totalRow}>
-              <Text style={s.muted}>Discount ({formatRate(invoice.discountBps)})</Text>
+              <Text style={s.muted}>{tr("Discount ({rate})", { rate: formatRate(invoice.discountBps) })}</Text>
               <Text>−{money(invoice.discountCents)}</Text>
             </View>
           ) : null}
@@ -117,12 +120,12 @@ export function InvoicePdf({ workspace, client, invoice, items }: Props) {
             .filter((g) => g.rateBps > 0)
             .map((g) => (
               <View key={g.rateBps} style={s.totalRow}>
-                <Text style={s.muted}>VAT {formatRate(g.rateBps)}</Text>
+                <Text style={s.muted}>{tr("VAT {rate}", { rate: formatRate(g.rateBps) })}</Text>
                 <Text>{money(g.vatCents)}</Text>
               </View>
             ))}
           <View style={s.grand}>
-            <Text>Total</Text>
+            <Text>{tr("Total")}</Text>
             <Text>{money(invoice.totalCents)}</Text>
           </View>
         </View>
@@ -135,7 +138,7 @@ export function InvoicePdf({ workspace, client, invoice, items }: Props) {
         ) : null}
 
         <Text style={{ position: "absolute", bottom: 28, left: 48, right: 48, fontSize: 7, color: MUTED, textAlign: "center" }} fixed>
-          {workspace.name} · {invoiceNumberLabel(invoice.number)} · Created with Faturo
+          {workspace.name} · {invoiceNumberLabel(invoice.number)} · {tr("Created with Faturo")}
         </Text>
       </Page>
     </Document>

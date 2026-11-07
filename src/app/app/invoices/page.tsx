@@ -9,8 +9,12 @@ import { today } from "@/lib/invoice-status";
 import { StatusBadge } from "@/components/StatusBadge";
 import { primaryButton, secondaryButton } from "@/components/ui";
 import { FileDown } from "lucide-react";
+import { getLocale, getT, getTr } from "@/i18n/server";
+import { formatDay } from "@/lib/dates";
 
-export const metadata: Metadata = { title: "Invoices" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getTr())("Invoices") };
+}
 
 const TABS = ["all", "draft", "sent", "overdue", "paid"] as const;
 type Tab = (typeof TABS)[number];
@@ -42,38 +46,40 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
     .where(and(...filters))
     .orderBy(desc(invoices.number));
 
-  const date = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  const [tr, dict, locale] = [await getTr(), await getT(), await getLocale()];
+  const date = (d: string) => formatDay(d, locale);
+  const tabLabel = (t: Tab) => (t === "all" ? tr("All") : dict.status[t]);
 
   return (
     <div className="mx-auto grid max-w-6xl gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold tracking-[0.14em] text-brand uppercase">Invoices</p>
-          <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">Your invoices</h1>
+          <p className="text-xs font-semibold tracking-[0.14em] text-brand uppercase">{tr("Invoices")}</p>
+          <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">{tr("Your invoices")}</h1>
         </div>
         <div className="flex flex-wrap gap-2">
           {rows.length > 0 && (
             <a href={`/app/invoices/export${tab === "all" ? "" : `?status=${tab}`}`} className={secondaryButton} download>
-              <FileDown className="size-4" aria-hidden /> Export CSV
+              <FileDown className="size-4" aria-hidden /> {tr("Export CSV")}
             </a>
           )}
           {hasRole(role, "admin") && (
             <Link href="/app/invoices/new" className={primaryButton}>
-              + New invoice
+              {tr("+ New invoice")}
             </Link>
           )}
         </div>
       </div>
 
-      <nav aria-label="Filter by status" className="flex gap-1 overflow-x-auto rounded-xl bg-surface-2 p-1">
+      <nav aria-label={tr("Filter by status")} className="flex gap-1 overflow-x-auto rounded-xl bg-surface-2 p-1">
         {TABS.map((t) => (
           <Link
             key={t}
             href={t === "all" ? "/app/invoices" : `/app/invoices?status=${t}`}
             aria-current={t === tab ? "page" : undefined}
-            className={`rounded-lg px-3 py-1.5 text-sm font-semibold capitalize transition ${t === tab ? "bg-surface shadow-sm" : "text-muted hover:text-fg"}`}
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${t === tab ? "bg-surface shadow-sm" : "text-muted hover:text-fg"}`}
           >
-            {t}
+            {tabLabel(t)}
           </Link>
         ))}
       </nav>
@@ -81,10 +87,10 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
       {rows.length === 0 ? (
         <div className="grid place-items-center gap-2 rounded-2xl border border-dashed border-line bg-surface px-6 py-14 text-center">
           <span className="text-3xl">🧾</span>
-          <p className="font-semibold">{tab === "all" ? "No invoices yet" : `No ${tab} invoices`}</p>
+          <p className="font-semibold">{tab === "all" ? tr("No invoices yet") : tr(`No ${tab} invoices`)}</p>
           {tab === "all" && hasRole(role, "admin") && (
             <Link href="/app/invoices/new" className="text-sm font-semibold text-brand hover:underline">
-              Create your first invoice →
+              {tr("Create your first invoice →")}
             </Link>
           )}
         </div>
@@ -93,12 +99,12 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
           <table className="w-full text-left text-sm">
             <thead className="border-b border-line text-xs tracking-wider text-muted uppercase">
               <tr>
-                <th className="px-4 py-3 font-medium">Number</th>
-                <th className="px-4 py-3 font-medium">Client</th>
-                <th className="hidden px-4 py-3 font-medium md:table-cell">Issued</th>
-                <th className="hidden px-4 py-3 font-medium sm:table-cell">Due</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 text-right font-medium">Total</th>
+                <th className="px-4 py-3 font-medium">{tr("Number")}</th>
+                <th className="px-4 py-3 font-medium">{tr("Client")}</th>
+                <th className="hidden px-4 py-3 font-medium md:table-cell">{tr("Issued")}</th>
+                <th className="hidden px-4 py-3 font-medium sm:table-cell">{tr("Due")}</th>
+                <th className="px-4 py-3 font-medium">{tr("Status")}</th>
+                <th className="px-4 py-3 text-right font-medium">{tr("Total")}</th>
               </tr>
             </thead>
             <tbody>

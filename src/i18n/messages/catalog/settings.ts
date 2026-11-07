@@ -1,0 +1,21 @@
+export const SETTINGS: Record<string, string> = {
+  Settings: "Cilësimet",
+  "Business details": "Të dhënat e biznesit",
+  "These appear on every invoice, PDF and public link.": "Këto shfaqen në çdo faturë, PDF dhe link publik.",
+  "Business details saved": "Të dhënat e biznesit u ruajtën",
+  "Business name *": "Emri i biznesit *",
+  Currency: "Monedha",
+  "A new currency applies to new invoices; existing ones keep theirs.": "Monedha e re vlen për faturat e reja; faturat ekzistuese mbajnë të tyren.",
+  "Only the owner can change the business details.": "Vetëm pronari mund t'i ndryshojë të dhënat e biznesit.",
+  "Set up your business": "Konfiguro biznesin",
+  "Set up your business, {name}": "Konfiguro biznesin, {name}",
+  "Last step": "Hapi i fundit",
+  "New workspace": "Hapësirë e re pune",
+  "Add another business": "Shto një biznes tjetër",
+  "These details appear on every invoice. You can change them later in Settings.": "Këto të dhëna shfaqen në çdo faturë. Mund t'i ndryshosh më vonë te Cilësimet.",
+  "Create workspace": "Krijo hapësirën e punës",
+  Cancel: "Anulo",
+  // Server-action errors
+  "Enter your business name.": "Shkruaj emrin e biznesit.",
+  "You can own up to 10 workspaces.": "Mund të kesh deri në 10 hapësira pune.",
+};

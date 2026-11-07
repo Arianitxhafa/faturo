@@ -15,6 +15,7 @@ import { invoiceLimit } from "@/lib/billing";
 import { createToken } from "@/lib/tokens";
 import { invoiceNumberLabel } from "@/lib/money";
 import type { Action } from "@/lib/activity-format";
+import { getTr } from "@/i18n/server";
 
 export type InvoiceFormState = { error?: string } | undefined;
 
@@ -60,6 +61,7 @@ export async function saveInvoice(_prev: InvoiceFormState, formData: FormData): 
   const parsed = payloadSchema.safeParse(raw);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const p = parsed.data;
+  const tr = await getTr();
 
   // Parse every number on the server — totals sent by the browser are never trusted.
   const discountBps = p.discount.trim() ? parsePercent(p.discount) : 0;
@@ -68,10 +70,10 @@ export async function saveInvoice(_prev: InvoiceFormState, formData: FormData): 
   for (const [i, item] of p.items.entries()) {
     const quantityHundredths = parseQuantity(item.quantity);
     const unitPriceCents = parseMoney(item.unitPrice);
-    if (!quantityHundredths) return { error: `Line ${i + 1}: enter a quantity greater than 0.` };
-    if (unitPriceCents === null) return { error: `Line ${i + 1}: enter a valid price.` };
-    if (quantityHundredths > MAX_QUANTITY_HUNDREDTHS) return { error: `Line ${i + 1}: the quantity is too large.` };
-    if (unitPriceCents > MAX_UNIT_PRICE_CENTS) return { error: `Line ${i + 1}: the price is too large (max 1,000,000).` };
+    if (!quantityHundredths) return { error: tr("Line {n}: enter a quantity greater than 0.", { n: i + 1 }) };
+    if (unitPriceCents === null) return { error: tr("Line {n}: enter a valid price.", { n: i + 1 }) };
+    if (quantityHundredths > MAX_QUANTITY_HUNDREDTHS) return { error: tr("Line {n}: the quantity is too large.", { n: i + 1 }) };
+    if (unitPriceCents > MAX_UNIT_PRICE_CENTS) return { error: tr("Line {n}: the price is too large (max 1,000,000).", { n: i + 1 }) };
     lines.push({ description: item.description, quantityHundredths, unitPriceCents, vatRateBps: item.vatRateBps });
   }
   const totals = computeTotals(lines, discountBps);
@@ -166,7 +168,7 @@ export async function setInvoiceStatus(id: string, next: InvoiceStatus) {
   const { user, workspace } = await requireMembership("admin");
   const found = await getInvoice(workspace.id, id);
   if (!found) return { error: "Invoice not found." };
-  if (!TRANSITIONS[found.invoice.status].includes(next)) return { error: `Can't move a ${found.invoice.status} invoice to ${next}.` };
+  if (!TRANSITIONS[found.invoice.status].includes(next)) return { error: (await getTr())("This invoice can't move from {from} to {to}.", { from: found.invoice.status, to: next }) };
 
   const now = new Date();
   await db.batch([

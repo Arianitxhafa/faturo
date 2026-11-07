@@ -1,5 +1,6 @@
 "use client";
 
+import { useTr } from "@/i18n/client";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import type { InvoiceStatus } from "@/db/schema";
@@ -21,14 +22,15 @@ export function InvoiceActions({ id, status, canEdit }: Props) {
     return () => clearTimeout(t);
   }, [confirmDelete]);
   const [error, setError] = useState<string | null>(null);
+  const tr = useTr();
 
   const run = (fn: () => Promise<{ error?: string } | void>, success?: string) =>
     start(async () => {
       setError(null);
       const result = await fn();
       if (result?.error) {
-        setError(result.error);
-        toast(result.error, "error");
+        setError(tr(result.error));
+        toast(tr(result.error), "error");
       } else if (success) toast(success);
     });
 
@@ -43,30 +45,30 @@ export function InvoiceActions({ id, status, canEdit }: Props) {
             {status === "draft" && (
               <>
                 <Link href={`/app/invoices/${id}/edit`} className={secondaryButton}>
-                  <Pencil className="size-4" /> Edit
+                  <Pencil className="size-4" /> {tr("Edit")}
                 </Link>
-                <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "sent"), "Invoice marked as sent")} className={primaryButton}>
-                  <Send className="size-4" /> Mark as sent
+                <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "sent"), tr("Invoice marked as sent"))} className={primaryButton}>
+                  <Send className="size-4" /> {tr("Mark as sent")}
                 </button>
               </>
             )}
             {status === "sent" && (
               <>
-                <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "paid"), "Payment recorded — nice work 🎉")} className={primaryButton}>
-                  <Check className="size-4" /> Mark as paid
+                <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "paid"), tr("Payment recorded — nice work 🎉"))} className={primaryButton}>
+                  <Check className="size-4" /> {tr("Mark as paid")}
                 </button>
-                <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "draft"), "Moved back to draft")} className={secondaryButton}>
-                  <Undo2 className="size-4" /> Back to draft
+                <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "draft"), tr("Moved back to draft"))} className={secondaryButton}>
+                  <Undo2 className="size-4" /> {tr("Back to draft")}
                 </button>
               </>
             )}
             {status === "paid" && (
-              <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "sent"), "Marked as unpaid")} className={secondaryButton}>
-                <Undo2 className="size-4" /> Mark as unpaid
+              <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "sent"), tr("Marked as unpaid"))} className={secondaryButton}>
+                <Undo2 className="size-4" /> {tr("Mark as unpaid")}
               </button>
             )}
             <button disabled={pending} onClick={() => run(() => duplicateInvoice(id))} className={secondaryButton}>
-              <Copy className="size-4" /> Duplicate
+              <Copy className="size-4" /> {tr("Duplicate")}
             </button>
             {status === "draft" && (
               <button
@@ -74,7 +76,7 @@ export function InvoiceActions({ id, status, canEdit }: Props) {
                 onClick={() => (confirmDelete ? run(() => deleteInvoice(id)) : setConfirmDelete(true))}
                 className={`rounded-xl px-3 py-2.5 text-sm font-semibold transition ${confirmDelete ? "bg-red-600 text-white" : "text-red-600 hover:bg-red-500/10 dark:text-red-400"}`}
               >
-                {confirmDelete ? "Click again to delete" : "Delete"}
+                {confirmDelete ? tr("Click again to delete") : tr("Delete")}
               </button>
             )}
           </>

@@ -24,6 +24,24 @@ const CLIENTS = [
   { name: "Studio Iliria", email: "studio@iliria.example", address: "Rr. Myslym Shyri 8, Tiranë", taxNumber: "L91234567A" },
 ];
 
+/** Albanian line descriptions and notes, so the demo speaks the visitor's language. */
+const DEMO_SQ: Record<string, string> = {
+  "Website design": "Dizajni i faqes",
+  "Hosting · 12 months": "Hosting · 12 muaj",
+  "Brand identity": "Identiteti i markës",
+  "Social media management · monthly": "Menaxhimi i rrjeteve sociale · mujor",
+  "Photography session": "Seancë fotografike",
+  "Maintenance & support": "Mirëmbajtje dhe mbështetje",
+  "Menu design": "Dizajni i menysë",
+  "Print-ready files": "Skedarë gati për printim",
+  "SEO audit": "Auditim SEO",
+  "Keyword report": "Raport i fjalëve kyçe",
+  "Landing page": "Faqe prezantuese",
+  Copywriting: "Shkrim teksti reklamues",
+  "Thank you for your business!": "Faleminderit për bashkëpunimin!",
+  "Demo User": "Përdorues Demo",
+};
+
 // [description, quantity in hundredths, unit price in cents, VAT bps]
 type Line = [string, number, number, number];
 const SERVICES: Line[][] = [
@@ -95,7 +113,8 @@ export async function purgeOldDemos() {
 }
 
 /** Creates a fresh demo user with a workspace full of realistic invoices. Returns credentials to sign in with. */
-export async function createDemoAccount() {
+export async function createDemoAccount(locale: "en" | "sq" = "en") {
+  const tr = (s: string) => (locale === "sq" ? (DEMO_SQ[s] ?? s) : s);
   await purgeOldDemos();
   const [{ n }] = await db
     .select({ n: sql<number>`count(*)::int` })
@@ -173,7 +192,7 @@ export async function createDemoAccount() {
       discountCents: t.discountCents,
       vatCents: t.vatCents,
       totalCents: t.totalCents,
-      notes: "Thank you for your business!",
+      notes: tr("Thank you for your business!"),
       sentAt: p.status === "draft" ? null : at(p.issue, 10),
       paidAt: p.paidOn ? at(p.paidOn, 12) : null,
       createdBy: userId,
@@ -193,12 +212,12 @@ export async function createDemoAccount() {
     if (views) log.push({ workspaceId, actorId: null, action: "invoice.viewed", createdAt: at(addDays(p.issue, 1), 8), meta, entityType: "invoice", entityId: id });
     if (p.paidOn) add(userId, "invoice.paid", at(p.paidOn, 12), meta, "invoice", id);
     p.lines.forEach(([description, quantityHundredths, unitPriceCents, vatRateBps], position) =>
-      itemRows.push({ invoiceId: id, position, description, quantityHundredths, unitPriceCents, vatRateBps, lineTotalCents: t.lineTotals[position] })
+      itemRows.push({ invoiceId: id, position, description: tr(description), quantityHundredths, unitPriceCents, vatRateBps, lineTotalCents: t.lineTotals[position] })
     );
   });
 
   await db.batch([
-    db.insert(users).values({ id: userId, name: "Demo User", email, passwordHash: await hashPassword(password) }),
+    db.insert(users).values({ id: userId, name: tr("Demo User"), email, passwordHash: await hashPassword(password) }),
     db.insert(workspaces).values({ id: workspaceId, plan: "pro", name: "Arbën Design Studio", currency: "EUR", address: "Rr. Nëna Terezë 12, Prishtinë", taxNumber: "811234567", iban: "XK00 0000 0000 0000 0000" }),
     db.insert(users).values(team.map((m) => ({ id: m.id, name: m.name, email: m.email, passwordHash: "disabled" }))),
     db.insert(memberships).values([

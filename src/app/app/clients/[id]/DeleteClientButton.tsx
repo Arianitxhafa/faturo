@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { deleteClient } from "../actions";
+import { useTr } from "@/i18n/client";
 
 export function DeleteClientButton({ id, hasInvoices }: { id: string; hasInvoices: boolean }) {
   const [confirm, setConfirm] = useState(false);
+  const tr = useTr();
 
   // Disarm the second-click confirmation after a few seconds.
   useEffect(() => {
@@ -15,7 +17,7 @@ export function DeleteClientButton({ id, hasInvoices }: { id: string; hasInvoice
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  if (hasInvoices) return <p className="text-xs text-muted">Clients with invoices can&apos;t be deleted.</p>;
+  if (hasInvoices) return <p className="text-xs text-muted">{tr("Clients with invoices can't be deleted.")}</p>;
 
   return (
     <div className="grid gap-2">
@@ -26,12 +28,12 @@ export function DeleteClientButton({ id, hasInvoices }: { id: string; hasInvoice
           if (!confirm) return setConfirm(true);
           start(async () => {
             const result = await deleteClient(id);
-            if (result?.error) setError(result.error);
+            if (result?.error) setError(tr(result.error));
           });
         }}
         className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${confirm ? "bg-red-600 text-white" : "text-red-600 hover:bg-red-500/10 dark:text-red-400"}`}
       >
-        {pending ? "Deleting…" : confirm ? "Click again to delete" : "Delete client"}
+        {pending ? tr("Deleting…") : confirm ? tr("Click again to delete") : tr("Delete client")}
       </button>
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>

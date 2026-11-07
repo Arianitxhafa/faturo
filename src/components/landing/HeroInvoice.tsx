@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/i18n/client";
 
 const LINES = [
-  { d: "Brand identity", q: "1", p: "450.00", a: "450.00" },
-  { d: "Website design", q: "1", p: "600.00", a: "600.00" },
-  { d: "Hosting · 12 months", q: "1", p: "120.00", a: "120.00" },
+  { q: "1", p: "450.00", a: "450.00" },
+  { q: "1", p: "600.00", a: "600.00" },
+  { q: "1", p: "120.00", a: "120.00" },
 ];
 // subtotal 1,170.00 · VAT 18 % 210.60 · total 1,380.60
 const STEPS = 7; // 0 empty → 1..3 lines → 4 totals → 5 sent → 6 paid stamp
@@ -13,6 +14,8 @@ const STEPS = 7; // 0 empty → 1..3 lines → 4 totals → 5 sent → 6 paid st
 /** A self-writing invoice that loops: lines appear, totals land, then it gets stamped PAID. */
 export function HeroInvoice() {
   const [step, setStep] = useState(0);
+  const dict = useT();
+  const t = dict.landing;
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -24,7 +27,7 @@ export function HeroInvoice() {
     return () => clearTimeout(id);
   }, [step]);
 
-  const status = step >= 6 ? "Paid" : step >= 5 ? "Sent" : "Draft";
+  const status = step >= 6 ? "paid" : step >= 5 ? "sent" : "draft";
 
   return (
     <div className="relative">
@@ -35,32 +38,32 @@ export function HeroInvoice() {
             <p className="mt-1.5 text-xs text-[#6e6a62]">Rr. Nëna Terezë 12, Prishtinë</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-semibold tracking-[0.2em] text-[#0f766e] uppercase">Invoice</p>
+            <p className="text-[10px] font-semibold tracking-[0.2em] text-[#0f766e] uppercase">{t.hero.invoice}</p>
             <p className="mt-0.5 font-semibold tabular-nums">INV-0042</p>
             <span
               className={`mt-1.5 inline-block rounded-md px-2 py-0.5 text-[11px] font-semibold transition-colors duration-500 ${
-                status === "Paid" ? "bg-emerald-100 text-emerald-800" : status === "Sent" ? "bg-sky-100 text-sky-800" : "bg-[#efebe2] text-[#6e6a62]"
+                status === "paid" ? "bg-emerald-100 text-emerald-800" : status === "sent" ? "bg-sky-100 text-sky-800" : "bg-[#efebe2] text-[#6e6a62]"
               }`}
             >
-              {status}
+              {dict.status[status]}
             </span>
           </div>
         </div>
 
         <div className="mt-6 text-xs">
-          <p className="text-[10px] font-semibold tracking-wider text-[#6e6a62] uppercase">Bill to</p>
+          <p className="text-[10px] font-semibold tracking-wider text-[#6e6a62] uppercase">{t.hero.billTo}</p>
           <p className="mt-0.5 font-semibold">Restaurant Liburnia</p>
         </div>
 
         <div className="mt-5 grid grid-cols-[1fr_auto] gap-x-4 border-b-2 border-[#16181b] pb-1.5 text-[10px] font-semibold tracking-wider uppercase">
-          <span>Description</span>
-          <span className="text-right">Amount</span>
+          <span>{t.hero.description}</span>
+          <span className="text-right">{t.hero.amount}</span>
         </div>
         <ul className="min-h-[7.5rem] text-sm">
           {LINES.map((l, i) =>
             step > i ? (
-              <li key={l.d} className="grid grid-cols-[1fr_auto] gap-x-4 border-b border-[#e3ddd0] py-2 animate-[type-in_0.5s_ease_both]">
-                <span>{l.d}</span>
+              <li key={i} className="grid grid-cols-[1fr_auto] gap-x-4 border-b border-[#e3ddd0] py-2 animate-[type-in_0.5s_ease_both]">
+                <span>{t.hero.lines[i]}</span>
                 <span className="text-right font-medium tabular-nums">€{l.a}</span>
               </li>
             ) : null
@@ -69,15 +72,15 @@ export function HeroInvoice() {
 
         <dl className={`mt-3 ml-auto grid w-52 gap-1 text-sm transition-all duration-500 ${step >= 4 ? "opacity-100" : "translate-y-1 opacity-0"}`}>
           <div className="flex justify-between text-[#6e6a62]">
-            <dt>Subtotal</dt>
+            <dt>{t.subtotal}</dt>
             <dd className="tabular-nums">€1,170.00</dd>
           </div>
           <div className="flex justify-between text-[#6e6a62]">
-            <dt>VAT 18%</dt>
+            <dt>{t.vat}</dt>
             <dd className="tabular-nums">€210.60</dd>
           </div>
           <div className="mt-1 flex justify-between border-t-2 border-[#16181b] pt-1.5 text-base font-bold">
-            <dt>Total</dt>
+            <dt>{t.total}</dt>
             <dd className="tabular-nums">€1,380.60</dd>
           </div>
         </dl>
@@ -100,7 +103,7 @@ export function HeroInvoice() {
       >
         <span className="grid size-7 place-items-center rounded-full bg-emerald-100 text-emerald-700">✓</span>
         <div>
-          <p className="font-semibold">Payment received</p>
+          <p className="font-semibold">{t.hero.received}</p>
           <p className="text-xs text-muted tabular-nums">+€1,380.60 · Restaurant Liburnia</p>
         </div>
       </div>

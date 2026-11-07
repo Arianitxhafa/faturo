@@ -1,12 +1,14 @@
 import type { Client, Invoice, InvoiceItem, Workspace } from "@/db/schema";
 import { computeTotals, formatMoney, formatQuantity, formatRate, invoiceNumberLabel } from "@/lib/money";
+import { getLocale, getTr } from "@/i18n/server";
+import { formatDay } from "@/lib/dates";
 
 type Props = { workspace: Workspace; client: Client; invoice: Invoice; items: InvoiceItem[]; stamp?: "paid" | "overdue" };
 
-const date = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-
 /** The invoice as a printed page — used on the detail screen. The PDF mirrors this layout. */
-export function InvoiceDocument({ workspace, client, invoice, items, stamp }: Props) {
+export async function InvoiceDocument({ workspace, client, invoice, items, stamp }: Props) {
+  const [tr, locale] = [await getTr(), await getLocale()];
+  const date = (d: string) => formatDay(d, locale, { day: true, month: "long", year: true });
   const money = (c: number) => formatMoney(c, invoice.currency);
   const { vatGroups } = computeTotals(items, invoice.discountBps);
 
@@ -16,27 +18,27 @@ export function InvoiceDocument({ workspace, client, invoice, items, stamp }: Pr
         <div>
           <p className="text-xl font-bold">{workspace.name}</p>
           <p className="mt-1 text-sm whitespace-pre-line text-[#6b6f76]">
-            {[workspace.address, workspace.taxNumber && `Tax no. ${workspace.taxNumber}`].filter(Boolean).join("\n")}
+            {[workspace.address, workspace.taxNumber && tr("Tax no. {n}", { n: workspace.taxNumber })].filter(Boolean).join("\n")}
           </p>
         </div>
         <div className="sm:text-right">
-          <p className="text-xs font-semibold tracking-[0.2em] text-[#0f766e] uppercase">Invoice</p>
+          <p className="text-xs font-semibold tracking-[0.2em] text-[#0f766e] uppercase">{tr("Invoice")}</p>
           <p className="mt-1 text-2xl font-bold">{invoiceNumberLabel(invoice.number)}</p>
         </div>
       </header>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2">
         <div>
-          <p className="text-xs font-semibold tracking-wider text-[#6b6f76] uppercase">Bill to</p>
+          <p className="text-xs font-semibold tracking-wider text-[#6b6f76] uppercase">{tr("Bill to")}</p>
           <p className="mt-1 font-semibold">{client.name}</p>
           <p className="text-sm whitespace-pre-line text-[#6b6f76]">
-            {[client.address, client.email, client.taxNumber && `Tax no. ${client.taxNumber}`].filter(Boolean).join("\n")}
+            {[client.address, client.email, client.taxNumber && tr("Tax no. {n}", { n: client.taxNumber })].filter(Boolean).join("\n")}
           </p>
         </div>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:justify-self-end">
-          <dt className="text-[#6b6f76]">Issue date</dt>
+          <dt className="text-[#6b6f76]">{tr("Issue date")}</dt>
           <dd className="text-right font-medium">{date(invoice.issueDate)}</dd>
-          <dt className="text-[#6b6f76]">Due date</dt>
+          <dt className="text-[#6b6f76]">{tr("Due date")}</dt>
           <dd className="text-right font-medium">{date(invoice.dueDate)}</dd>
         </dl>
       </div>
@@ -45,11 +47,11 @@ export function InvoiceDocument({ workspace, client, invoice, items, stamp }: Pr
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b-2 border-[#14161a] text-left text-xs tracking-wider uppercase">
-              <th className="py-2 pr-3 font-semibold">Description</th>
-              <th className="py-2 pr-3 text-right font-semibold">Qty</th>
-              <th className="py-2 pr-3 text-right font-semibold">Unit price</th>
-              <th className="py-2 pr-3 text-right font-semibold">VAT</th>
-              <th className="py-2 text-right font-semibold">Amount</th>
+              <th className="py-2 pr-3 font-semibold">{tr("Description")}</th>
+              <th className="py-2 pr-3 text-right font-semibold">{tr("Qty")}</th>
+              <th className="py-2 pr-3 text-right font-semibold">{tr("Unit price")}</th>
+              <th className="py-2 pr-3 text-right font-semibold">{tr("VAT")}</th>
+              <th className="py-2 text-right font-semibold">{tr("Amount")}</th>
             </tr>
           </thead>
           <tbody>
@@ -76,17 +78,17 @@ export function InvoiceDocument({ workspace, client, invoice, items, stamp }: Pr
             style={{ animationDelay: "350ms" }}
             aria-hidden
           >
-            {stamp}
+            {tr(stamp)}
           </div>
         )}
         <dl className="ml-auto grid w-full max-w-xs gap-1.5 text-sm">
           <div className="flex justify-between">
-            <dt className="text-[#6b6f76]">Subtotal</dt>
+            <dt className="text-[#6b6f76]">{tr("Subtotal")}</dt>
             <dd className="tabular-nums">{money(invoice.subtotalCents)}</dd>
           </div>
           {invoice.discountCents > 0 && (
             <div className="flex justify-between">
-              <dt className="text-[#6b6f76]">Discount ({formatRate(invoice.discountBps)})</dt>
+              <dt className="text-[#6b6f76]">{tr("Discount ({rate})", { rate: formatRate(invoice.discountBps) })}</dt>
               <dd className="tabular-nums">−{money(invoice.discountCents)}</dd>
             </div>
           )}
@@ -94,12 +96,12 @@ export function InvoiceDocument({ workspace, client, invoice, items, stamp }: Pr
             .filter((g) => g.rateBps > 0)
             .map((g) => (
               <div key={g.rateBps} className="flex justify-between">
-                <dt className="text-[#6b6f76]">VAT {formatRate(g.rateBps)}</dt>
+                <dt className="text-[#6b6f76]">{tr("VAT {rate}", { rate: formatRate(g.rateBps) })}</dt>
                 <dd className="tabular-nums">{money(g.vatCents)}</dd>
               </div>
             ))}
           <div className="mt-1 flex justify-between border-t-2 border-[#14161a] pt-2 text-lg font-bold">
-            <dt>Total</dt>
+            <dt>{tr("Total")}</dt>
             <dd className="tabular-nums">{money(invoice.totalCents)}</dd>
           </div>
         </dl>

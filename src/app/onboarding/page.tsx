@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
-import { hasAnyWorkspace, requireUser } from "@/lib/session";
+import { hasAnyWorkspace, requireUser, userExists } from "@/lib/session";
 import { OnboardingForm } from "./OnboardingForm";
 
 export const metadata: Metadata = { title: "Set up your business" };
 
 export default async function OnboardingPage() {
   const user = await requireUser();
+  if (!(await userExists(user.id))) redirect("/session-expired");
   if (await hasAnyWorkspace(user.id)) redirect("/app");
 
   return (

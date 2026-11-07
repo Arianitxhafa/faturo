@@ -9,6 +9,7 @@ import { formatMoney, invoiceNumberLabel } from "@/lib/money";
 import { ClientForm } from "@/components/ClientForm";
 import { DeleteClientButton } from "./DeleteClientButton";
 import { StatusBadge } from "@/components/StatusBadge";
+import { isUuid } from "@/lib/invoices";
 
 export const metadata: Metadata = { title: "Client" };
 
@@ -16,6 +17,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const { workspace, role } = await requireMembership();
   const canEdit = hasRole(role, "admin");
+  if (!isUuid(id)) notFound();
 
   const [client] = await db
     .select()

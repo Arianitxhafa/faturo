@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import type { InvoiceStatus } from "@/db/schema";
 import { deleteInvoice, duplicateInvoice, setInvoiceStatus } from "../actions";
 import { primaryButton, secondaryButton } from "@/components/ui";
@@ -13,6 +13,13 @@ type Props = { id: string; status: InvoiceStatus; canEdit: boolean };
 export function InvoiceActions({ id, status, canEdit }: Props) {
   const [pending, start] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Disarm the second-click confirmation after a few seconds.
+  useEffect(() => {
+    if (!confirmDelete) return;
+    const t = setTimeout(() => setConfirmDelete(false), 4000);
+    return () => clearTimeout(t);
+  }, [confirmDelete]);
   const [error, setError] = useState<string | null>(null);
 
   const run = (fn: () => Promise<{ error?: string } | void>, success?: string) =>

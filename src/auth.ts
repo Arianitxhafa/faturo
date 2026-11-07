@@ -8,7 +8,7 @@ import { verifyPassword } from "@/lib/password";
 
 const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
-  password: z.string().min(1),
+  password: z.string().min(1).max(200),
 });
 
 const APP_PATHS = ["/app", "/onboarding"];

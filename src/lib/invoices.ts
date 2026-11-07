@@ -2,9 +2,13 @@ import "server-only";
 import { and, asc, eq, max } from "drizzle-orm";
 import { db } from "@/db";
 import { clients, invoiceItems, invoices } from "@/db/schema";
+import { isUuid } from "./ids";
+
+export { isUuid };
 
 /** One invoice with its client and items — always scoped to the caller's workspace. */
 export async function getInvoice(workspaceId: string, id: string) {
+  if (!isUuid(id)) return null;
   const [row] = await db
     .select({ invoice: invoices, client: clients })
     .from(invoices)

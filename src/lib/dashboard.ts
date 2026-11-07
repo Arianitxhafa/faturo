@@ -30,7 +30,7 @@ export async function getDashboard(workspaceId: string) {
   const monthlyRows = await db
     .select({ month: paidMonth, cents: sql<number>`sum(${invoices.totalCents})`.mapWith(Number), count: sql<number>`count(*)`.mapWith(Number) })
     .from(invoices)
-    .where(and(eq(invoices.workspaceId, workspaceId), eq(invoices.status, "paid"), gte(invoices.paidAt, new Date(`${months[0]}-01T00:00:00Z`))))
+    .where(and(eq(invoices.workspaceId, workspaceId), eq(invoices.status, "paid"), gte(invoices.paidAt, new Date(Date.parse(`${months[0]}-01T00:00:00Z`) - 86_400_000))))
     .groupBy(paidMonth);
   const byMonth = new Map(monthlyRows.map((r) => [r.month, r]));
   const monthly = months.map((m) => ({ month: m, cents: byMonth.get(m)?.cents ?? 0, count: byMonth.get(m)?.count ?? 0 }));

@@ -9,11 +9,17 @@ import { clients, invoiceItems, invoices, type InvoiceStatus } from "@/db/schema
 import { requireMembership } from "@/lib/session";
 import { computeTotals, parseMoney, parsePercent, parseQuantity, VAT_RATES_BPS } from "@/lib/money";
 import { getInvoice, isUniqueViolation, nextInvoiceNumber } from "@/lib/invoices";
-import { today } from "@/lib/invoice-status";
+import { isIsoDate, today } from "@/lib/invoice-status";
 
 export type InvoiceFormState = { error?: string } | undefined;
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a valid date.");
+// Real calendar dates only: a bare regex accepts 2026-02-31, which Postgres rejects.
+const isoDate = z.string().refine(isIsoDate, "Pick a valid date.");
+
+// Amounts are stored in 32-bit integer columns (cents); keep well inside that range.
+const MAX_UNIT_PRICE_CENTS = 100_000_000; // €1,000,000.00
+const MAX_QUANTITY_HUNDREDTHS = 10_000_000; // 100,000 units
+const MAX_TOTAL_CENTS = 2_000_000_000; // just under 2^31
 
 const payloadSchema = z
   .object({
@@ -59,9 +65,12 @@ export async function saveInvoice(_prev: InvoiceFormState, formData: FormData): 
     const unitPriceCents = parseMoney(item.unitPrice);
     if (!quantityHundredths) return { error: `Line ${i + 1}: enter a quantity greater than 0.` };
     if (unitPriceCents === null) return { error: `Line ${i + 1}: enter a valid price.` };
+    if (quantityHundredths > MAX_QUANTITY_HUNDREDTHS) return { error: `Line ${i + 1}: the quantity is too large.` };
+    if (unitPriceCents > MAX_UNIT_PRICE_CENTS) return { error: `Line ${i + 1}: the price is too large (max 1,000,000).` };
     lines.push({ description: item.description, quantityHundredths, unitPriceCents, vatRateBps: item.vatRateBps });
   }
   const totals = computeTotals(lines, discountBps);
+  if (totals.subtotalCents > MAX_TOTAL_CENTS || totals.totalCents > MAX_TOTAL_CENTS) return { error: "This invoice total is too large." };
 
   const [client] = await db
     .select({ id: clients.id })

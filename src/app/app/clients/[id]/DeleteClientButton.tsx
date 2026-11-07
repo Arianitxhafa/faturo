@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { deleteClient } from "../actions";
 
 export function DeleteClientButton({ id, hasInvoices }: { id: string; hasInvoices: boolean }) {
   const [confirm, setConfirm] = useState(false);
+
+  // Disarm the second-click confirmation after a few seconds.
+  useEffect(() => {
+    if (!confirm) return;
+    const t = setTimeout(() => setConfirm(false), 4000);
+    return () => clearTimeout(t);
+  }, [confirm]);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 

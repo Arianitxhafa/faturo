@@ -11,7 +11,7 @@ import { InvoiceActions } from "./InvoiceActions";
 
 export const metadata: Metadata = { title: "Invoice" };
 
-const stamp = (d: Date | null) => (d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null);
+const stamp = (d: Date | null) => (d ? d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Europe/Belgrade" }) : null);
 
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

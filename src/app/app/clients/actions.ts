@@ -7,6 +7,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { clients, invoices } from "@/db/schema";
 import { requireMembership } from "@/lib/session";
+import { isUuid } from "@/lib/invoices";
 
 export type ClientFormState = { error?: string; ok?: boolean } | undefined;
 
@@ -40,6 +41,7 @@ export async function saveClient(_prev: ClientFormState, formData: FormData): Pr
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const id = String(formData.get("id") ?? "");
+  if (id && !isUuid(id)) return { error: "Client not found." };
   if (id) {
     // workspaceId in the WHERE clause: a client from another workspace can never be touched.
     const updated = await db
@@ -58,6 +60,7 @@ export async function saveClient(_prev: ClientFormState, formData: FormData): Pr
 
 export async function deleteClient(id: string) {
   const { workspace } = await requireMembership("admin");
+  if (!isUuid(id)) return { error: "Client not found." };
   const [{ n }] = await db.select({ n: count() }).from(invoices).where(and(eq(invoices.clientId, id), eq(invoices.workspaceId, workspace.id)));
   if (n > 0) return { error: `This client has ${n} invoice${n === 1 ? "" : "s"} and can't be deleted.` };
 

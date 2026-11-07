@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { and, asc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { memberships, workspaces, type Role } from "@/db/schema";
+import { memberships, users, workspaces, type Role } from "@/db/schema";
 
 const ROLE_RANK: Record<Role, number> = { member: 1, admin: 2, owner: 3 };
 
@@ -32,9 +32,15 @@ export async function requireMembership(minimum: Role = "member") {
     .orderBy(asc(memberships.createdAt))
     .limit(1);
 
-  if (!row) redirect("/onboarding");
+  if (!row) redirect((await userExists(user.id)) ? "/onboarding" : "/session-expired");
   if (!hasRole(row.role, minimum)) redirect("/app?denied=1");
   return { user, workspace: row.workspace, role: row.role };
+}
+
+/** False when the session outlived its user (for example a purged demo account). */
+export async function userExists(userId: string) {
+  const [row] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).limit(1);
+  return Boolean(row);
 }
 
 export async function hasAnyWorkspace(userId: string) {

@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { Logo } from "@/components/Logo";
 import { HeroInvoice } from "@/components/landing/HeroInvoice";
 import { primaryButton, secondaryButton } from "@/components/ui";
+import { DemoButton } from "@/components/DemoButton";
 
 const MARQUEE = ["VAT 18% · 8% · 0%", "PDF in one click", "Overdue alerts", "EUR · USD · ALL", "Team roles", "Duplicate in a click", "Client history", "Monthly revenue chart"];
 
@@ -78,9 +79,13 @@ export default async function Home() {
                 {signedIn ? "Go to dashboard" : "Create your first invoice"}
                 <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
               </Link>
-              <a href="#how" className={`${secondaryButton} px-6 py-3 text-base`}>
-                See how it works
-              </a>
+              {signedIn ? (
+                <a href="#how" className={`${secondaryButton} px-6 py-3 text-base`}>
+                  See how it works
+                </a>
+              ) : (
+                <DemoButton className={`${secondaryButton} px-6 py-3 text-base`} />
+              )}
             </div>
             <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted">
               {["No card needed", "Free up to 5 invoices / month", "EUR, USD & ALL"].map((t) => (
@@ -235,6 +240,12 @@ export default async function Home() {
             <Link href={signedIn ? "/app" : "/signup"} className="group inline-flex items-center gap-2 rounded-xl bg-[#34d3b4] px-6 py-3 text-base font-semibold text-[#052a23] transition hover:brightness-110 active:scale-[0.98]">
               {signedIn ? "Open Faturo" : "Start free — no card needed"} <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
             </Link>
+            {!signedIn && (
+              <DemoButton
+                label="or explore the demo first"
+                className="inline-flex items-center gap-2 text-sm font-medium text-[#ecebe6]/75 underline-offset-4 transition hover:text-[#ecebe6] hover:underline"
+              />
+            )}
           </div>
         </section>
       </main>

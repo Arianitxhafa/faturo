@@ -7,6 +7,7 @@ import { signIn, signOut } from "@/auth";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
+import { createDemoAccount } from "@/lib/demo";
 
 // Echo back what the user typed so the form keeps it after an error.
 export type AuthState = { error?: string; values?: { name?: string; email?: string } } | undefined;
@@ -44,4 +45,23 @@ export async function logInAction(_prev: AuthState, formData: FormData): Promise
 
 export async function logOutAction() {
   await signOut({ redirectTo: "/" });
+}
+
+export type DemoState = { error?: string } | undefined;
+
+/** One click: a fresh demo account with sample clients and a year of invoices, then straight into the dashboard. */
+export async function startDemoAction(): Promise<DemoState> {
+  let creds: { email: string; password: string };
+  try {
+    creds = await createDemoAccount();
+  } catch (error) {
+    console.error("demo setup failed", error);
+    return { error: "The demo is busy right now — please try again in a minute." };
+  }
+  await signIn("credentials", { ...creds, redirectTo: "/app" });
+}
+
+/** Leaves the demo and opens sign-up (signed-in users are redirected away from /signup otherwise). */
+export async function leaveDemoAction() {
+  await signOut({ redirectTo: "/signup" });
 }

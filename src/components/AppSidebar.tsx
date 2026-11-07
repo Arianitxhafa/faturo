@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { CreditCard, FileText, LayoutDashboard, LogOut, Menu, Plus, Settings, Users, UsersRound, X, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, ChevronsUpDown, CreditCard, FileText, History, LayoutDashboard, LogOut, Menu, Plus, Settings, Users, UsersRound, X, type LucideIcon } from "lucide-react";
 import { Logo } from "./Logo";
 import { logOutAction } from "@/app/(auth)/actions";
+import { switchWorkspace } from "@/app/app/workspace-actions";
 
 type NavItem = { href: string; label: string; icon: LucideIcon; ready: boolean };
 
@@ -13,12 +14,15 @@ const NAV: NavItem[] = [
   { href: "/app", label: "Dashboard", icon: LayoutDashboard, ready: true },
   { href: "/app/invoices", label: "Invoices", icon: FileText, ready: true },
   { href: "/app/clients", label: "Clients", icon: Users, ready: true },
-  { href: "/app/team", label: "Team", icon: UsersRound, ready: false },
+  { href: "/app/team", label: "Team", icon: UsersRound, ready: true },
+  { href: "/app/activity", label: "Activity", icon: History, ready: true },
   { href: "/app/settings", label: "Settings", icon: Settings, ready: false },
   { href: "/app/billing", label: "Billing", icon: CreditCard, ready: false },
 ];
 
 type Props = {
+  workspaceId: string;
+  workspaces: { id: string; name: string; role: string }[];
   workspaceName: string;
   plan: "free" | "pro";
   role: string;
@@ -31,9 +35,24 @@ function isActive(pathname: string, href: string) {
   return href === "/app" ? pathname === "/app" : pathname.startsWith(href);
 }
 
-export function AppSidebar({ workspaceName, plan, role, userName, userEmail, canCreate }: Props) {
+export function AppSidebar({ workspaceId, workspaces, workspaceName, plan, role, userName, userEmail, canCreate }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [switcher, setSwitcher] = useState(false);
+  const switcherRef = useRef<HTMLDivElement>(null);
+
+  // Close the workspace menu on outside click or Escape.
+  useEffect(() => {
+    if (!switcher) return;
+    const onDown = (e: MouseEvent) => !switcherRef.current?.contains(e.target as Node) && setSwitcher(false);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setSwitcher(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [switcher]);
   const initials = userName
     .split(" ")
     .map((p) => p[0])
@@ -79,13 +98,47 @@ export function AppSidebar({ workspaceName, plan, role, userName, userEmail, can
         </button>
       </div>
 
-      <div className="rounded-2xl border border-line bg-surface p-3 shadow-card">
-        <p className="truncate font-display text-xl leading-tight">{workspaceName}</p>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted">
-          <span className="capitalize">{role}</span>
-          <span aria-hidden>·</span>
-          <span className={`rounded-md px-1.5 py-px text-[10px] font-bold tracking-wider uppercase ${plan === "pro" ? "bg-gold/15 text-gold" : "bg-surface-2 text-muted"}`}>{plan}</span>
-        </p>
+      <div ref={switcherRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setSwitcher((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={switcher}
+          className="flex w-full items-center gap-2 rounded-2xl border border-line bg-surface p-3 text-left shadow-card transition hover:border-muted/40"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-display text-xl leading-tight">{workspaceName}</span>
+            <span className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+              <span className="capitalize">{role}</span>
+              <span aria-hidden>·</span>
+              <span className={`rounded-md px-1.5 py-px text-[10px] font-bold tracking-wider uppercase ${plan === "pro" ? "bg-gold/15 text-gold" : "bg-surface-2 text-muted"}`}>{plan}</span>
+            </span>
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0 text-muted" aria-hidden />
+        </button>
+        {switcher && (
+          <div role="menu" aria-label="Workspaces" className="absolute inset-x-0 top-full z-20 mt-2 animate-scale overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-card">
+            <p className="px-2.5 pt-1.5 pb-1 text-[10px] font-semibold tracking-wider text-muted uppercase">Workspaces</p>
+            {workspaces.map((w) => (
+              <form key={w.id} action={switchWorkspace.bind(null, w.id)}>
+                <button role="menuitem" className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm transition hover:bg-surface-2">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{w.name}</span>
+                    <span className="block text-xs text-muted capitalize">{w.role}</span>
+                  </span>
+                  {w.id === workspaceId && <Check className="size-4 text-brand" aria-label="Current workspace" />}
+                </button>
+              </form>
+            ))}
+            <Link
+              href="/onboarding?new=1"
+              role="menuitem"
+              className="mt-1 flex items-center gap-2 rounded-xl border-t border-line px-2.5 py-2 text-sm font-medium text-brand transition hover:bg-surface-2"
+            >
+              <Plus className="size-4" aria-hidden /> New workspace
+            </Link>
+          </div>
+        )}
       </div>
 
       {canCreate && (

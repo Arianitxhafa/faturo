@@ -23,9 +23,9 @@ function greeting() {
   return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
 }
 
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ denied?: string; joined?: string }> }) {
   const { user, workspace, role } = await requireMembership();
-  const { denied } = await searchParams;
+  const { denied, joined } = await searchParams;
   const { kpis, monthly, topClients, recent } = await getDashboard(workspace.id);
   const money = (c: number) => formatMoney(c, workspace.currency);
   const canEdit = hasRole(role, "admin");
@@ -44,6 +44,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         }
         description={`Here's how ${workspace.name} is doing.`}
       />
+
+      {joined && (
+        <p role="status" className="animate-rise rounded-xl border border-brand/25 bg-brand/[0.07] px-4 py-3 text-sm">
+          🎉 Welcome to <strong>{workspace.name}</strong> — you joined as {role === "member" ? "a member (read-only)" : `an ${role}`}.
+        </p>
+      )}
 
       {denied && (
         <p role="alert" className="rounded-xl bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">

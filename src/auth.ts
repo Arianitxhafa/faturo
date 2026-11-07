@@ -5,6 +5,9 @@ import { z } from "zod";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { verifyPassword } from "@/lib/password";
+import { loginBlocked, recordLoginAttempt } from "@/lib/login-guard";
+import { clientIp } from "@/lib/rate-limit";
+import { safeCallbackUrl } from "@/lib/redirects";
 
 const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -21,12 +24,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: { email: {}, password: {} },
-      async authorize(raw) {
+      async authorize(raw, request) {
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) throw new CredentialsSignin();
-        const [user] = await db.select().from(users).where(eq(users.email, parsed.data.email)).limit(1);
+        const { email, password } = parsed.data;
+        const ip = clientIp(request.headers);
+        // Enforced here (not only in the login form) so the Auth.js endpoint itself can't be brute-forced.
+        if (await loginBlocked(email, ip)) throw new CredentialsSignin();
+
+        const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        const ok = Boolean(user) && (await verifyPassword(password, user.passwordHash));
+        await recordLoginAttempt(email, ip, ok);
         // Same error for unknown email and wrong password, so accounts can't be enumerated.
-        if (!user || !(await verifyPassword(parsed.data.password, user.passwordHash))) throw new CredentialsSignin();
+        if (!ok) throw new CredentialsSignin();
         return { id: user.id, name: user.name, email: user.email };
       },
     }),
@@ -45,7 +55,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const path = request.nextUrl.pathname;
       const signedIn = Boolean(auth?.user);
       if (APP_PATHS.some((p) => path.startsWith(p))) return signedIn;
-      if (signedIn && AUTH_PAGES.includes(path)) return Response.redirect(new URL("/app", request.nextUrl));
+      if (signedIn && AUTH_PAGES.includes(path)) {
+        // Already signed in: go where the link wanted (e.g. an invite), else the app.
+        const invite = request.nextUrl.searchParams.get("invite");
+        const target = invite ? `/invite/${invite}` : safeCallbackUrl(request.nextUrl.searchParams.get("callbackUrl"));
+        return Response.redirect(new URL(safeCallbackUrl(target), request.nextUrl));
+      }
       return true;
     },
   },

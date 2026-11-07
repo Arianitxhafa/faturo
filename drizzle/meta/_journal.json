@@ -15,6 +15,13 @@
       "when": 1794005440884,
       "tag": "0001_clients_invoices",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794019184015,
+      "tag": "0002_team_activity_rate_limit",
+      "breakpoints": true
     }
   ]
 }

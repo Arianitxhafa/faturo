@@ -5,11 +5,13 @@ import { leaveDemoAction } from "@/app/(auth)/actions";
 import { Sparkles } from "lucide-react";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, workspace, role } = await requireMembership();
+  const { user, workspace, role, memberships } = await requireMembership();
 
   return (
     <div className="flex flex-1 flex-col md:flex-row">
       <AppSidebar
+        workspaceId={workspace.id}
+        workspaces={memberships}
         workspaceName={workspace.name}
         plan={workspace.plan}
         role={role}

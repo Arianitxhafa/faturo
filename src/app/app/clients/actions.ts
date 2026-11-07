@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { clients, invoices } from "@/db/schema";
 import { requireMembership } from "@/lib/session";
 import { isUuid } from "@/lib/invoices";
+import { activityInsert } from "@/lib/activity";
 
 export type ClientFormState = { error?: string; ok?: boolean } | undefined;
 
@@ -31,7 +32,7 @@ const clientSchema = z.object({
 });
 
 export async function saveClient(_prev: ClientFormState, formData: FormData): Promise<ClientFormState> {
-  const { workspace } = await requireMembership("admin");
+  const { user, workspace } = await requireMembership("admin");
   const parsed = clientSchema.safeParse({
     name: formData.get("name") ?? "",
     email: formData.get("email") ?? "",
@@ -50,8 +51,13 @@ export async function saveClient(_prev: ClientFormState, formData: FormData): Pr
       .where(and(eq(clients.id, id), eq(clients.workspaceId, workspace.id)))
       .returning({ id: clients.id });
     if (!updated.length) return { error: "Client not found." };
+    await activityInsert({ workspaceId: workspace.id, actorId: user.id, action: "client.updated", entityType: "client", entityId: id, meta: { client: parsed.data.name } });
   } else {
-    await db.insert(clients).values({ ...parsed.data, workspaceId: workspace.id });
+    const newId = crypto.randomUUID();
+    await db.batch([
+      db.insert(clients).values({ id: newId, ...parsed.data, workspaceId: workspace.id }),
+      activityInsert({ workspaceId: workspace.id, actorId: user.id, action: "client.created", entityType: "client", entityId: newId, meta: { client: parsed.data.name } }),
+    ]);
   }
 
   revalidatePath("/app/clients");
@@ -59,12 +65,21 @@ export async function saveClient(_prev: ClientFormState, formData: FormData): Pr
 }
 
 export async function deleteClient(id: string) {
-  const { workspace } = await requireMembership("admin");
+  const { user, workspace } = await requireMembership("admin");
   if (!isUuid(id)) return { error: "Client not found." };
   const [{ n }] = await db.select({ n: count() }).from(invoices).where(and(eq(invoices.clientId, id), eq(invoices.workspaceId, workspace.id)));
   if (n > 0) return { error: `This client has ${n} invoice${n === 1 ? "" : "s"} and can't be deleted.` };
 
-  await db.delete(clients).where(and(eq(clients.id, id), eq(clients.workspaceId, workspace.id)));
+  const [client] = await db
+    .select({ name: clients.name })
+    .from(clients)
+    .where(and(eq(clients.id, id), eq(clients.workspaceId, workspace.id)))
+    .limit(1);
+  if (!client) return { error: "Client not found." };
+  await db.batch([
+    db.delete(clients).where(and(eq(clients.id, id), eq(clients.workspaceId, workspace.id))),
+    activityInsert({ workspaceId: workspace.id, actorId: user.id, action: "client.deleted", entityType: "client", entityId: id, meta: { client: client.name } }),
+  ]);
   revalidatePath("/app/clients");
   redirect("/app/clients");
 }

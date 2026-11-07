@@ -10,6 +10,9 @@ import { requireMembership } from "@/lib/session";
 import { computeTotals, parseMoney, parsePercent, parseQuantity, VAT_RATES_BPS } from "@/lib/money";
 import { getInvoice, isUniqueViolation, nextInvoiceNumber } from "@/lib/invoices";
 import { isIsoDate, today } from "@/lib/invoice-status";
+import { activityInsert, invoiceMeta } from "@/lib/activity";
+import { invoiceNumberLabel } from "@/lib/money";
+import type { Action } from "@/lib/activity-format";
 
 export type InvoiceFormState = { error?: string } | undefined;
 
@@ -73,7 +76,7 @@ export async function saveInvoice(_prev: InvoiceFormState, formData: FormData): 
   if (totals.subtotalCents > MAX_TOTAL_CENTS || totals.totalCents > MAX_TOTAL_CENTS) return { error: "This invoice total is too large." };
 
   const [client] = await db
-    .select({ id: clients.id })
+    .select({ id: clients.id, name: clients.name })
     .from(clients)
     .where(and(eq(clients.id, p.clientId), eq(clients.workspaceId, workspace.id)))
     .limit(1);
@@ -102,6 +105,14 @@ export async function saveInvoice(_prev: InvoiceFormState, formData: FormData): 
       db.update(invoices).set(header).where(and(eq(invoices.id, p.id), eq(invoices.workspaceId, workspace.id))),
       db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, p.id)),
       db.insert(invoiceItems).values(itemRows(p.id)),
+      activityInsert({
+        workspaceId: workspace.id,
+        actorId: user.id,
+        action: "invoice.updated",
+        entityType: "invoice",
+        entityId: p.id,
+        meta: invoiceMeta({ number: existing.invoice.number, totalCents: totals.totalCents, currency: existing.invoice.currency }, client.name),
+      }),
     ]);
     revalidatePath("/app/invoices");
     redirect(`/app/invoices/${p.id}`);
@@ -115,6 +126,14 @@ export async function saveInvoice(_prev: InvoiceFormState, formData: FormData): 
       await db.batch([
         db.insert(invoices).values({ id, workspaceId: workspace.id, number, currency: workspace.currency, createdBy: user.id, ...header }),
         db.insert(invoiceItems).values(itemRows(id)),
+        activityInsert({
+          workspaceId: workspace.id,
+          actorId: user.id,
+          action: "invoice.created",
+          entityType: "invoice",
+          entityId: id,
+          meta: invoiceMeta({ number, totalCents: totals.totalCents, currency: workspace.currency }, client.name),
+        }),
       ]);
       break;
     } catch (error) {
@@ -131,32 +150,52 @@ const TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
   paid: ["sent"],
 };
 
+// Which activity entry a status change produces.
+function statusAction(from: InvoiceStatus, to: InvoiceStatus): Action {
+  if (to === "paid") return "invoice.paid";
+  if (to === "draft") return "invoice.draft";
+  return from === "paid" ? "invoice.unpaid" : "invoice.sent";
+}
+
 export async function setInvoiceStatus(id: string, next: InvoiceStatus) {
-  const { workspace } = await requireMembership("admin");
+  const { user, workspace } = await requireMembership("admin");
   const found = await getInvoice(workspace.id, id);
   if (!found) return { error: "Invoice not found." };
   if (!TRANSITIONS[found.invoice.status].includes(next)) return { error: `Can't move a ${found.invoice.status} invoice to ${next}.` };
 
   const now = new Date();
-  await db
-    .update(invoices)
-    .set({
-      status: next,
-      sentAt: next === "draft" ? null : next === "sent" && !found.invoice.sentAt ? now : found.invoice.sentAt,
-      paidAt: next === "paid" ? now : null,
-      updatedAt: now,
-    })
-    .where(and(eq(invoices.id, id), eq(invoices.workspaceId, workspace.id)));
+  await db.batch([
+    db
+      .update(invoices)
+      .set({
+        status: next,
+        sentAt: next === "draft" ? null : next === "sent" && !found.invoice.sentAt ? now : found.invoice.sentAt,
+        paidAt: next === "paid" ? now : null,
+        updatedAt: now,
+      })
+      .where(and(eq(invoices.id, id), eq(invoices.workspaceId, workspace.id))),
+    activityInsert({
+      workspaceId: workspace.id,
+      actorId: user.id,
+      action: statusAction(found.invoice.status, next),
+      entityType: "invoice",
+      entityId: id,
+      meta: invoiceMeta(found.invoice, found.client.name),
+    }),
+  ]);
   revalidatePath("/app/invoices");
   revalidatePath(`/app/invoices/${id}`);
 }
 
 export async function deleteInvoice(id: string) {
-  const { workspace } = await requireMembership("admin");
+  const { user, workspace } = await requireMembership("admin");
   const found = await getInvoice(workspace.id, id);
   if (!found) return { error: "Invoice not found." };
   if (found.invoice.status !== "draft") return { error: "Only drafts can be deleted. Sent and paid invoices are kept for your records." };
-  await db.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.workspaceId, workspace.id)));
+  await db.batch([
+    db.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.workspaceId, workspace.id))),
+    activityInsert({ workspaceId: workspace.id, actorId: user.id, action: "invoice.deleted", entityType: "invoice", entityId: id, meta: invoiceMeta(found.invoice, found.client.name) }),
+  ]);
   revalidatePath("/app/invoices");
   redirect("/app/invoices");
 }
@@ -203,6 +242,14 @@ export async function duplicateInvoice(id: string) {
             lineTotalCents,
           }))
         ),
+        activityInsert({
+          workspaceId: workspace.id,
+          actorId: user.id,
+          action: "invoice.duplicated",
+          entityType: "invoice",
+          entityId: newId,
+          meta: { ...invoiceMeta({ number, totalCents: invoice.totalCents, currency: invoice.currency }, found.client.name), from: invoiceNumberLabel(invoice.number) },
+        }),
       ]);
       break;
     } catch (error) {

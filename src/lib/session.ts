@@ -1,15 +1,16 @@
 import "server-only";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { memberships, users, workspaces, type Role } from "@/db/schema";
+import { hasRole } from "./permissions";
 
-const ROLE_RANK: Record<Role, number> = { member: 1, admin: 2, owner: 3 };
+export { hasRole };
 
-export function hasRole(role: Role, minimum: Role) {
-  return ROLE_RANK[role] >= ROLE_RANK[minimum];
-}
+/** Cookie holding the workspace the user is looking at (only a hint — membership is always re-checked). */
+export const CURRENT_WORKSPACE_COOKIE = "faturo_ws";
 
 /** The signed-in user, or a redirect to /login. */
 export async function requireUser() {
@@ -18,23 +19,34 @@ export async function requireUser() {
   return session.user as { id: string; name?: string | null; email?: string | null };
 }
 
+/** Every workspace this user belongs to, oldest membership first. */
+export async function listMemberships(userId: string) {
+  return db
+    .select({ workspace: workspaces, role: memberships.role })
+    .from(memberships)
+    .innerJoin(workspaces, eq(workspaces.id, memberships.workspaceId))
+    .where(eq(memberships.userId, userId))
+    .orderBy(asc(memberships.createdAt));
+}
+
 /**
- * The single entry point for tenant-scoped access: returns the user, their workspace and role.
+ * The single entry point for tenant-scoped access: returns the user, their current workspace and role.
  * Every query for workspace data must use `workspace.id` from here — never an id sent by the client.
  */
 export async function requireMembership(minimum: Role = "member") {
   const user = await requireUser();
-  const [row] = await db
-    .select({ workspace: workspaces, role: memberships.role })
-    .from(memberships)
-    .innerJoin(workspaces, eq(workspaces.id, memberships.workspaceId))
-    .where(eq(memberships.userId, user.id))
-    .orderBy(asc(memberships.createdAt))
-    .limit(1);
+  const rows = await listMemberships(user.id);
+  if (!rows.length) redirect((await userExists(user.id)) ? "/onboarding" : "/session-expired");
 
-  if (!row) redirect((await userExists(user.id)) ? "/onboarding" : "/session-expired");
+  const preferred = (await cookies()).get(CURRENT_WORKSPACE_COOKIE)?.value;
+  const row = rows.find((r) => r.workspace.id === preferred) ?? rows[0];
   if (!hasRole(row.role, minimum)) redirect("/app?denied=1");
-  return { user, workspace: row.workspace, role: row.role };
+  return {
+    user,
+    workspace: row.workspace,
+    role: row.role,
+    memberships: rows.map((r) => ({ id: r.workspace.id, name: r.workspace.name, role: r.role })),
+  };
 }
 
 /** False when the session outlived its user (for example a purged demo account). */
@@ -44,10 +56,17 @@ export async function userExists(userId: string) {
 }
 
 export async function hasAnyWorkspace(userId: string) {
-  const [row] = await db
-    .select({ id: memberships.workspaceId })
-    .from(memberships)
-    .where(and(eq(memberships.userId, userId)))
-    .limit(1);
+  const [row] = await db.select({ id: memberships.workspaceId }).from(memberships).where(eq(memberships.userId, userId)).limit(1);
   return Boolean(row);
+}
+
+/** Remember which workspace to open (call from a server action or route handler). */
+export async function setCurrentWorkspace(workspaceId: string) {
+  (await cookies()).set(CURRENT_WORKSPACE_COOKIE, workspaceId, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  });
 }

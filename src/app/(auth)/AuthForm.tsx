@@ -6,14 +6,25 @@ import { inputClass, primaryButton } from "@/components/ui";
 import { PasswordInput } from "@/components/PasswordInput";
 import type { AuthState } from "./actions";
 
-type Props = { mode: "login" | "signup"; action: (state: AuthState, formData: FormData) => Promise<AuthState> };
+type Props = {
+  mode: "login" | "signup";
+  action: (state: AuthState, formData: FormData) => Promise<AuthState>;
+  /** Where to go after logging in (validated on the server). */
+  callbackUrl?: string;
+  /** Invite token when signing up from an invite link. */
+  invite?: string;
+  /** Prefilled email, e.g. the address an invite was sent to. */
+  email?: string;
+};
 
-export function AuthForm({ mode, action }: Props) {
+export function AuthForm({ mode, action, callbackUrl, invite, email }: Props) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const signup = mode === "signup";
 
   return (
     <form action={formAction} className="grid gap-4">
+      {callbackUrl && <input type="hidden" name="callbackUrl" value={callbackUrl} />}
+      {invite && <input type="hidden" name="invite" value={invite} />}
       {signup && (
         <label className="grid gap-1.5 text-sm font-medium">
           Your name
@@ -22,7 +33,7 @@ export function AuthForm({ mode, action }: Props) {
       )}
       <label className="grid gap-1.5 text-sm font-medium">
         Email
-        <input name="email" type="email" required autoComplete="email" defaultValue={state?.values?.email} placeholder="you@business.com" className={inputClass} />
+        <input name="email" type="email" required autoComplete="email" defaultValue={state?.values?.email ?? email} placeholder="you@business.com" className={inputClass} />
       </label>
       <PasswordInput
         label="Password"
@@ -43,7 +54,14 @@ export function AuthForm({ mode, action }: Props) {
 
       <p className="text-center text-sm text-muted">
         {signup ? "Already have an account? " : "New to Faturo? "}
-        <Link href={signup ? "/login" : "/signup"} className="font-semibold text-brand hover:underline">
+        <Link
+          href={
+            signup
+              ? `/login${invite ? `?callbackUrl=${encodeURIComponent(`/invite/${invite}`)}` : ""}`
+              : `/signup${callbackUrl?.startsWith("/invite/") ? `?invite=${callbackUrl.slice("/invite/".length)}` : ""}`
+          }
+          className="font-semibold text-brand hover:underline"
+        >
           {signup ? "Log in" : "Create a free account"}
         </Link>
       </p>

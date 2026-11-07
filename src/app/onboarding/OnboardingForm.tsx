@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useTransition } from "react";
 import { inputClass, primaryButton } from "@/components/ui";
 import { createWorkspace } from "./actions";
 
-export function OnboardingForm() {
+export function OnboardingForm({ another = false }: { another?: boolean }) {
   const [state, action, pending] = useActionState(createWorkspace, undefined);
   const [, start] = useTransition();
 
@@ -18,6 +19,7 @@ export function OnboardingForm() {
       }}
       className="grid gap-4"
     >
+      {another && <input type="hidden" name="new" value="1" />}
       <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
         <label className="grid gap-1.5 text-sm font-medium">
           Business name *
@@ -56,6 +58,11 @@ export function OnboardingForm() {
       <button type="submit" disabled={pending} className={`${primaryButton} mt-2`}>
         {pending ? "Creating…" : "Create workspace"}
       </button>
+      {another && (
+        <Link href="/app" className="text-center text-sm text-muted hover:text-fg">
+          Cancel
+        </Link>
+      )}
     </form>
   );
 }

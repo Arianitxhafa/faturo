@@ -2,8 +2,9 @@ import "server-only";
 import { randomBytes, randomUUID } from "node:crypto";
 import { and, gte, inArray, like, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { clients, invoiceItems, invoices, memberships, users, workspaces } from "@/db/schema";
-import { computeTotals } from "@/lib/money";
+import { activity, clients, invites, invoiceItems, invoices, memberships, users, workspaces, type ActivityMeta } from "@/db/schema";
+import { computeTotals, formatMoney, invoiceNumberLabel } from "@/lib/money";
+import { createToken } from "@/lib/tokens";
 import { addDays, today } from "@/lib/invoice-status";
 import { hashPassword } from "@/lib/password";
 
@@ -73,7 +74,12 @@ function plan(now: string): Planned[] {
   return out.sort((a, b) => a.issue.localeCompare(b.issue));
 }
 
-const at = (isoDate: string, hour: number) => new Date(`${isoDate}T${String(hour).padStart(2, "0")}:00:00Z`);
+// A moment on a given day — never in the future (today's 09:00 may not have happened yet).
+const at = (isoDate: string, hour: number) => {
+  const t = new Date(`${isoDate}T${String(hour).padStart(2, "0")}:00:00Z`);
+  const latest = Date.now() - 60_000;
+  return t.getTime() > latest ? new Date(latest - (24 - hour) * 60_000) : t;
+};
 
 /** Removes demo accounts (and their workspaces) older than 24 hours. */
 export async function purgeOldDemos() {
@@ -93,7 +99,7 @@ export async function createDemoAccount() {
   const [{ n }] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(users)
-    .where(and(like(users.email, `%${DEMO_EMAIL_DOMAIN}`), gte(users.createdAt, DEMO_TTL)));
+    .where(and(like(users.email, `demo-%${DEMO_EMAIL_DOMAIN}`), gte(users.createdAt, DEMO_TTL)));
   if (n >= MAX_DEMOS_PER_DAY) throw new Error("demo-limit");
 
   const email = `demo-${randomBytes(6).toString("hex")}${DEMO_EMAIL_DOMAIN}`;
@@ -102,6 +108,26 @@ export async function createDemoAccount() {
   const workspaceId = randomUUID();
   const clientIds = CLIENTS.map(() => randomUUID());
   const now = today();
+  const tag = randomBytes(4).toString("hex");
+
+  // Two teammates (they can't log in: "disabled" is not a valid password hash) and one pending invite.
+  const team = [
+    { id: randomUUID(), name: "Elira Hoxha", email: `team-${tag}-elira${DEMO_EMAIL_DOMAIN}`, role: "admin" as const, joined: addDays(now, -300) },
+    { id: randomUUID(), name: "Driton Berisha", email: `team-${tag}-driton${DEMO_EMAIL_DOMAIN}`, role: "member" as const, joined: addDays(now, -120) },
+  ];
+  const [elira] = team;
+  const log: (typeof activity.$inferInsert)[] = [];
+  const add = (actorId: string, action: string, createdAt: Date, meta: ActivityMeta, entityType?: string, entityId?: string) =>
+    log.push({ workspaceId, actorId, action, createdAt, meta, entityType, entityId });
+
+  const start = addDays(now, -365);
+  add(userId, "workspace.created", at(start, 8), { name: "Arbën Design Studio" }, "workspace", workspaceId);
+  CLIENTS.forEach((c, i) => add(userId, "client.created", at(addDays(start, i * 3), 9), { client: c.name }, "client", clientIds[i]));
+  for (const m of team) {
+    add(userId, "member.invited", at(addDays(m.joined, -1), 15), { email: `${m.name.split(" ")[0].toLowerCase()}@arbendesign.example`, role: m.role }, "invite");
+    add(m.id, "member.joined", at(m.joined, 9), { role: m.role }, "member", m.id);
+  }
+  add(userId, "member.invited", at(addDays(now, -2), 11), { email: "accountant@arbendesign.example", role: "member" }, "invite");
 
   const invoiceRows: (typeof invoices.$inferInsert)[] = [];
   const itemRows: (typeof invoiceItems.$inferInsert)[] = [];
@@ -130,6 +156,12 @@ export async function createDemoAccount() {
       createdAt: at(p.issue, 9),
       updatedAt: at(p.paidOn ?? p.issue, 12),
     });
+    // History: Elira (admin) handles some of the invoicing once she has joined.
+    const author = p.issue >= elira.joined && i % 3 === 0 ? elira.id : userId;
+    const meta = { number: invoiceNumberLabel(i + 1), total: formatMoney(t.totalCents, "EUR"), client: CLIENTS[p.clientIdx].name };
+    add(author, "invoice.created", at(p.issue, 9), meta, "invoice", id);
+    if (p.status !== "draft") add(author, "invoice.sent", at(p.issue, 10), meta, "invoice", id);
+    if (p.paidOn) add(userId, "invoice.paid", at(p.paidOn, 12), meta, "invoice", id);
     p.lines.forEach(([description, quantityHundredths, unitPriceCents, vatRateBps], position) =>
       itemRows.push({ invoiceId: id, position, description, quantityHundredths, unitPriceCents, vatRateBps, lineTotalCents: t.lineTotals[position] })
     );
@@ -138,10 +170,24 @@ export async function createDemoAccount() {
   await db.batch([
     db.insert(users).values({ id: userId, name: "Demo User", email, passwordHash: await hashPassword(password) }),
     db.insert(workspaces).values({ id: workspaceId, name: "Arbën Design Studio", currency: "EUR", address: "Rr. Nëna Terezë 12, Prishtinë", taxNumber: "811234567", iban: "XK00 0000 0000 0000 0000" }),
-    db.insert(memberships).values({ workspaceId, userId, role: "owner" }),
+    db.insert(users).values(team.map((m) => ({ id: m.id, name: m.name, email: m.email, passwordHash: "disabled" }))),
+    db.insert(memberships).values([
+      { workspaceId, userId, role: "owner" as const, createdAt: at(start, 8) },
+      ...team.map((m) => ({ workspaceId, userId: m.id, role: m.role, createdAt: at(m.joined, 9) })),
+    ]),
+    db.insert(invites).values({
+      workspaceId,
+      email: "accountant@arbendesign.example",
+      role: "member",
+      tokenHash: createToken().hash,
+      invitedBy: userId,
+      createdAt: at(addDays(now, -2), 11),
+      expiresAt: new Date(Date.now() + 5 * 86_400_000), // in the future, so not via at()
+    }),
     db.insert(clients).values(CLIENTS.map((c, i) => ({ id: clientIds[i], workspaceId, ...c }))),
     db.insert(invoices).values(invoiceRows),
     db.insert(invoiceItems).values(itemRows),
+    db.insert(activity).values(log),
   ]);
 
   return { email, password };

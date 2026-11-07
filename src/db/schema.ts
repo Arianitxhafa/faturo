@@ -1,4 +1,4 @@
-import { date, index, integer, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, date, index, integer, jsonb, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export const planEnum = pgEnum("plan", ["free", "pro"]);
 export const roleEnum = pgEnum("member_role", ["owner", "admin", "member"]);
@@ -109,6 +109,59 @@ export const invoiceItems = pgTable(
   (t) => [index("invoice_items_invoice_idx").on(t.invoiceId)]
 );
 
+// Invite links: only a SHA-256 hash of the token is stored; the link is shown once, to the person who creates it.
+export const invites = pgTable(
+  "invites",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: roleEnum("role").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    invitedBy: uuid("invited_by").references(() => users.id, { onDelete: "set null" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    acceptedBy: uuid("accepted_by").references(() => users.id, { onDelete: "set null" }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("invites_workspace_idx").on(t.workspaceId)]
+);
+
+// Who did what, and when. `meta` keeps the details (invoice number, client name…) so entries stay readable after a delete.
+export type ActivityMeta = Record<string, string | number | null>;
+export const activity = pgTable(
+  "activity",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+    action: text("action").notNull(),
+    entityType: text("entity_type"),
+    entityId: uuid("entity_id"),
+    meta: jsonb("meta").$type<ActivityMeta>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("activity_workspace_created_idx").on(t.workspaceId, t.createdAt), index("activity_entity_idx").on(t.workspaceId, t.entityId)]
+);
+
+// Login attempts for rate limiting (per email and per IP).
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: text("email").notNull(),
+    ip: text("ip"),
+    success: boolean("success").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("login_attempts_email_idx").on(t.email, t.createdAt), index("login_attempts_ip_idx").on(t.ip, t.createdAt)]
+);
+
 export type User = typeof users.$inferSelect;
 export type Workspace = typeof workspaces.$inferSelect;
 export type Role = (typeof roleEnum.enumValues)[number];
@@ -116,3 +169,5 @@ export type Client = typeof clients.$inferSelect;
 export type Invoice = typeof invoices.$inferSelect;
 export type InvoiceItem = typeof invoiceItems.$inferSelect;
 export type InvoiceStatus = (typeof invoiceStatusEnum.enumValues)[number];
+export type Invite = typeof invites.$inferSelect;
+export type Activity = typeof activity.$inferSelect;

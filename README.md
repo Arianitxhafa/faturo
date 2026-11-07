@@ -4,7 +4,7 @@
 
 > **Live:** **[faturo-two.vercel.app](https://faturo-two.vercel.app)** — click **Try the live demo** to explore a pre-filled workspace without signing up.
 >
-> **Status:** in development — foundation, clients & invoices, dashboard, redesign and demo done; team, billing and public links next. See [docs/PLAN.md](docs/PLAN.md) for the full roadmap.
+> **Status:** in development — foundation, clients & invoices, dashboard, redesign, demo and team done; billing and public links next. See [docs/PLAN.md](docs/PLAN.md) for the full roadmap.
 
 ## ✨ Done so far
 - Email and password accounts with **Auth.js v5** — scrypt-hashed passwords, JWT sessions, generic login errors
@@ -21,7 +21,11 @@
 - **Dashboard** — revenue this month vs last month, unpaid and overdue totals, drafts, a 12-month revenue chart (accessible SVG with hover tooltips and a table for screen readers), top clients and recent invoices — all computed with SQL aggregates
 - **One-click demo** — creates a throwaway workspace with 5 clients and a year of realistic invoices in a single atomic batch, signs the visitor in, and purges demos after 24 hours
 - **Design** — custom "Paper & ink" look: serif display type, paper grain, a self-writing hero invoice, rubber stamps on paid/overdue invoices, count-up KPIs, toasts, skeletons, scroll-driven reveals, dark mode, and full `prefers-reduced-motion` support
-- **Unit tests** for money, VAT, discounts, parsing and overdue logic (`npm test`)
+- **Teams** — invite people by private link (only a SHA-256 hash of the token is stored; links are single-use, bound to the invited email and expire in 7 days); roles **Owner / Admin / Member** enforced on the server; change roles, remove members, leave, revoke invites
+- **Multiple workspaces** — one account can belong to several businesses, with a workspace switcher
+- **Activity log** — who created, edited, sent, paid or deleted what (and team changes), written in the same atomic batch as the change; a timeline per invoice
+- **Login rate limiting** — 5 failed attempts per account (and 30 per IP) in 15 minutes, enforced inside Auth.js so the API endpoint is protected too
+- **Unit tests** for money, VAT, discounts, parsing, overdue logic, role rules, invite tokens, redirects and rate limits (`npm test`)
 
 ## 🛠 Tech stack
 | Layer | Technology |

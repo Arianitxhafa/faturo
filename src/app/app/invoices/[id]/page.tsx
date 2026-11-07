@@ -8,6 +8,9 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { PageHeader } from "@/components/PageHeader";
 import { displayStatus } from "@/lib/invoice-status";
 import { InvoiceActions } from "./InvoiceActions";
+import { getActivity } from "@/lib/activity";
+import { ActivityFeed } from "@/components/ActivityFeed";
+import { card } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Invoice" };
 
@@ -19,6 +22,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   const found = await getInvoice(workspace.id, id);
   if (!found) notFound();
   const { invoice, client, items } = found;
+  const history = await getActivity(workspace.id, { entityId: invoice.id, limit: 20 });
 
   return (
     <div className="mx-auto grid max-w-4xl gap-5">
@@ -43,6 +47,14 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         items={items}
         stamp={invoice.status === "paid" ? "paid" : displayStatus(invoice.status, invoice.dueDate) === "overdue" ? "overdue" : undefined}
       />
+      {history.entries.length > 0 && (
+        <section className={`${card} animate-rise p-5 sm:p-7 [animation-delay:250ms]`} aria-labelledby="history-heading">
+          <h2 id="history-heading" className="mb-4 font-display text-2xl">
+            History
+          </h2>
+          <ActivityFeed entries={history.entries} grouped={false} />
+        </section>
+      )}
     </div>
   );
 }

@@ -31,12 +31,12 @@ export default async function ClientsPage() {
   return (
     <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1fr_320px]">
       <section>
-        <p className="text-sm font-medium text-brand">Clients</p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight">Your clients</h1>
+        <p className="text-xs font-semibold tracking-[0.14em] text-brand uppercase">Clients</p>
+        <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">Your clients</h1>
         <p className="mt-1 text-sm text-muted">{rows.length === 0 ? "Add the people and companies you bill." : `${rows.length} client${rows.length === 1 ? "" : "s"}`}</p>
 
         {rows.length > 0 && (
-          <div className="mt-5 overflow-x-auto rounded-2xl border border-line bg-surface">
+          <div className="mt-5 overflow-x-auto rounded-2xl border border-line bg-surface shadow-card animate-rise [animation-delay:120ms]">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-line text-xs tracking-wider text-muted uppercase">
                 <tr>
@@ -48,7 +48,7 @@ export default async function ClientsPage() {
               </thead>
               <tbody>
                 {rows.map((c) => (
-                  <tr key={c.id} className="border-b border-line last:border-0 hover:bg-surface-2/60">
+                  <tr key={c.id} className="border-b border-line last:border-0 transition hover:bg-surface-2/70">
                     <td className="px-4 py-3">
                       <Link href={`/app/clients/${c.id}`} className="font-semibold hover:text-brand">
                         {c.name}

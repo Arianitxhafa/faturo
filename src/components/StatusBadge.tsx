@@ -10,5 +10,10 @@ const STYLES: Record<DisplayStatus, string> = {
 
 export function StatusBadge({ status, dueDate }: { status: InvoiceStatus; dueDate: string }) {
   const s = displayStatus(status, dueDate);
-  return <span className={`rounded-md px-2 py-0.5 text-xs font-semibold capitalize ${STYLES[s]}`}>{s}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full font-sans tracking-normal px-2.5 py-0.5 text-xs font-semibold capitalize ${STYLES[s]}`}>
+      <span className={`size-1.5 rounded-full bg-current ${s === "overdue" ? "animate-pulse" : ""}`} aria-hidden />
+      {s}
+    </span>
+  );
 }

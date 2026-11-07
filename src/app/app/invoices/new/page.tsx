@@ -26,7 +26,7 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: P
         <Link href="/app/invoices" className="text-sm text-muted hover:text-fg">
           ← Invoices
         </Link>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">New invoice</h1>
+        <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">New invoice</h1>
       </div>
       {clientList.length === 0 ? (
         <div className="grid place-items-center gap-2 rounded-2xl border border-dashed border-line bg-surface px-6 py-14 text-center">

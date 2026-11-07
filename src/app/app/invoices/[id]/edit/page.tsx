@@ -33,7 +33,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
         <Link href={`/app/invoices/${id}`} className="text-sm text-muted hover:text-fg">
           ← {invoiceNumberLabel(invoice.number)}
         </Link>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">Edit {invoiceNumberLabel(invoice.number)}</h1>
+        <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">Edit {invoiceNumberLabel(invoice.number)}</h1>
       </div>
       <InvoiceEditor
         clients={clientList}

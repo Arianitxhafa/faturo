@@ -47,8 +47,8 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
     <div className="mx-auto grid max-w-6xl gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-brand">Invoices</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight">Your invoices</h1>
+          <p className="text-xs font-semibold tracking-[0.14em] text-brand uppercase">Invoices</p>
+          <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">Your invoices</h1>
         </div>
         {hasRole(role, "admin") && (
           <Link href="/app/invoices/new" className={primaryButton}>
@@ -81,7 +81,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
           )}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
+        <div className="overflow-x-auto rounded-2xl border border-line bg-surface shadow-card animate-rise [animation-delay:120ms]">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-line text-xs tracking-wider text-muted uppercase">
               <tr>
@@ -95,7 +95,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-b border-line last:border-0 hover:bg-surface-2/60">
+                <tr key={r.id} className="border-b border-line last:border-0 transition hover:bg-surface-2/70">
                   <td className="px-4 py-3">
                     <Link href={`/app/invoices/${r.id}`} className="font-semibold hover:text-brand">
                       {invoiceNumberLabel(r.number)}

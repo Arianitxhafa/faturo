@@ -5,6 +5,8 @@ import { useState, useTransition } from "react";
 import type { InvoiceStatus } from "@/db/schema";
 import { deleteInvoice, duplicateInvoice, setInvoiceStatus } from "../actions";
 import { primaryButton, secondaryButton } from "@/components/ui";
+import { toast } from "@/components/Toaster";
+import { Check, Copy, Download, Pencil, Send, Undo2 } from "lucide-react";
 
 type Props = { id: string; status: InvoiceStatus; canEdit: boolean };
 
@@ -13,48 +15,51 @@ export function InvoiceActions({ id, status, canEdit }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const run = (fn: () => Promise<{ error?: string } | void>) =>
+  const run = (fn: () => Promise<{ error?: string } | void>, success?: string) =>
     start(async () => {
       setError(null);
       const result = await fn();
-      if (result?.error) setError(result.error);
+      if (result?.error) {
+        setError(result.error);
+        toast(result.error, "error");
+      } else if (success) toast(success);
     });
 
   return (
     <div className="grid gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <a href={`/app/invoices/${id}/pdf`} className={secondaryButton}>
-          ⬇ Download PDF
+          <Download className="size-4" /> PDF
         </a>
         {canEdit && (
           <>
             {status === "draft" && (
               <>
                 <Link href={`/app/invoices/${id}/edit`} className={secondaryButton}>
-                  Edit
+                  <Pencil className="size-4" /> Edit
                 </Link>
-                <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "sent"))} className={primaryButton}>
-                  Mark as sent
+                <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "sent"), "Invoice marked as sent")} className={primaryButton}>
+                  <Send className="size-4" /> Mark as sent
                 </button>
               </>
             )}
             {status === "sent" && (
               <>
-                <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "paid"))} className={primaryButton}>
-                  ✓ Mark as paid
+                <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "paid"), "Payment recorded — nice work 🎉")} className={primaryButton}>
+                  <Check className="size-4" /> Mark as paid
                 </button>
-                <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "draft"))} className={secondaryButton}>
-                  Back to draft
+                <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "draft"), "Moved back to draft")} className={secondaryButton}>
+                  <Undo2 className="size-4" /> Back to draft
                 </button>
               </>
             )}
             {status === "paid" && (
-              <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "sent"))} className={secondaryButton}>
-                Mark as unpaid
+              <button disabled={pending} onClick={() => run(() => setInvoiceStatus(id, "sent"), "Marked as unpaid")} className={secondaryButton}>
+                <Undo2 className="size-4" /> Mark as unpaid
               </button>
             )}
             <button disabled={pending} onClick={() => run(() => duplicateInvoice(id))} className={secondaryButton}>
-              Duplicate
+              <Copy className="size-4" /> Duplicate
             </button>
             {status === "draft" && (
               <button

@@ -36,17 +36,17 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
         <Link href="/app/clients" className="text-sm text-muted hover:text-fg">
           ← All clients
         </Link>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight">{client.name}</h1>
+        <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">{client.name}</h1>
         <p className="mt-1 text-sm text-muted">{[client.email, client.address, client.taxNumber && `Tax no. ${client.taxNumber}`].filter(Boolean).join(" · ") || "No contact details yet"}</p>
 
         <h2 className="mt-6 mb-2 text-sm font-semibold tracking-wider text-muted uppercase">Invoices</h2>
         {clientInvoices.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-line p-6 text-center text-sm text-muted">No invoices for this client yet.</p>
         ) : (
-          <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
+          <ul className="divide-y divide-line rounded-2xl border border-line bg-surface shadow-card animate-rise [animation-delay:120ms]">
             {clientInvoices.map((inv) => (
               <li key={inv.id}>
-                <Link href={`/app/invoices/${inv.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface-2/60">
+                <Link href={`/app/invoices/${inv.id}`} className="flex items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-2/70">
                   <span className="font-medium">{invoiceNumberLabel(inv.number)}</span>
                   <StatusBadge status={inv.status} dueDate={inv.dueDate} />
                   <span className="ml-auto font-semibold tabular-nums">{formatMoney(inv.totalCents, inv.currency)}</span>

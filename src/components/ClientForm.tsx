@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useTransition } from "react";
 import { saveClient } from "@/app/app/clients/actions";
 import type { Client } from "@/db/schema";
 import { inputClass, primaryButton } from "./ui";
+import { toast } from "./Toaster";
 
 export function ClientForm({ client, onSaved }: { client?: Client; onSaved?: () => void }) {
   const [state, action, pending] = useActionState(saveClient, undefined);
@@ -12,6 +13,7 @@ export function ClientForm({ client, onSaved }: { client?: Client; onSaved?: () 
 
   useEffect(() => {
     if (!state?.ok) return;
+    toast(client ? "Client updated" : "Client added");
     if (!client) formRef.current?.reset();
     onSaved?.();
   }, [state, client, onSaved]);

@@ -58,6 +58,8 @@ export function RevenueChart({ data, currency }: { data: Point[]; currency: stri
                   d={`M${x},${y(0)} V${top + r} Q${x},${top} ${x + r},${top} H${x + barW - r} Q${x + barW},${top} ${x + barW},${top + r} V${y(0)} Z`}
                   fill="var(--chart)"
                   opacity={active === null || active === i ? 1 : 0.45}
+                  // Bars grow up from the baseline one after another.
+                  style={{ transformBox: "fill-box", transformOrigin: "bottom", animation: `grow-y 0.8s cubic-bezier(0.22,1,0.36,1) ${250 + i * 45}ms both`, transition: "opacity 0.2s" }}
                 />
               )}
               <text x={x + barW / 2} y={H - 8} textAnchor="middle" fill={isCurrent ? "var(--fg)" : "var(--muted)"} fontSize={11} fontWeight={isCurrent ? 600 : 400}>

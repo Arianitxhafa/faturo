@@ -2,7 +2,7 @@
 
 **Invoicing for freelancers and small businesses.** Create clients and invoices, calculate VAT automatically, download professional PDFs and always know who has paid.
 
-> **Live demo:** _link coming after deploy_ — click **Try the live demo** to explore a pre-filled workspace without signing up.
+> **Live:** **[faturo-two.vercel.app](https://faturo-two.vercel.app)** — click **Try the live demo** to explore a pre-filled workspace without signing up.
 >
 > **Status:** in development — foundation, clients & invoices, dashboard, redesign and demo done; team, billing and public links next. See [docs/PLAN.md](docs/PLAN.md) for the full roadmap.
 

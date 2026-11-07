@@ -22,6 +22,13 @@
       "when": 1794019184015,
       "tag": "0002_team_activity_rate_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794054113432,
+      "tag": "0003_billing",
+      "breakpoints": true
     }
   ]
 }

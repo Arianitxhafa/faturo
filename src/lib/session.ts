@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { memberships, users, workspaces, type Role } from "@/db/schema";
 import { hasRole } from "./permissions";
+import { syncSubscription } from "./billing";
 
 export { hasRole };
 
@@ -41,6 +42,11 @@ export async function requireMembership(minimum: Role = "member") {
   const preferred = (await cookies()).get(CURRENT_WORKSPACE_COOKIE)?.value;
   const row = rows.find((r) => r.workspace.id === preferred) ?? rows[0];
   if (!hasRole(row.role, minimum)) redirect("/app?denied=1");
+  if (row.workspace.plan === "pro") {
+    // What a billing provider's webhooks would do: renew the period, or drop to Free after a cancellation.
+    const plan = await syncSubscription(row.workspace.id);
+    if (plan) row.workspace.plan = plan;
+  }
   return {
     user,
     workspace: row.workspace,

@@ -6,11 +6,14 @@ import { clients } from "@/db/schema";
 import { requireMembership } from "@/lib/session";
 import { addDays, today } from "@/lib/invoice-status";
 import { InvoiceEditor } from "@/components/InvoiceEditor";
+import { UpgradeCard } from "@/components/billing/UpgradeCard";
+import { getUsage } from "@/lib/billing";
+import { PLAN_LIMITS } from "@/lib/plans";
 
 export const metadata: Metadata = { title: "New invoice" };
 
 export default async function NewInvoicePage({ searchParams }: { searchParams: Promise<{ client?: string }> }) {
-  const { workspace } = await requireMembership("admin");
+  const { workspace, role } = await requireMembership("admin");
   const { client } = await searchParams;
   const clientList = await db
     .select({ id: clients.id, name: clients.name })
@@ -19,6 +22,9 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: P
     .orderBy(asc(clients.name));
 
   const issue = today();
+  const usage = workspace.plan === "free" ? await getUsage(workspace.id) : null;
+  const limit = PLAN_LIMITS.free.invoicesPerMonth;
+  const blocked = usage !== null && usage.invoicesThisMonth >= limit;
 
   return (
     <div className="mx-auto grid max-w-4xl gap-5">
@@ -28,7 +34,18 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: P
         </Link>
         <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">New invoice</h1>
       </div>
-      {clientList.length === 0 ? (
+      {usage && !blocked && (
+        <p className="-mt-2 text-sm text-muted">
+          {usage.invoicesThisMonth} of {limit} free invoices used this month.
+        </p>
+      )}
+      {blocked ? (
+        <UpgradeCard
+          title={`You've used all ${limit} free invoices this month`}
+          body="Upgrade to Pro for unlimited invoices — or wait until next month, when your free invoices reset."
+          isOwner={role === "owner"}
+        />
+      ) : clientList.length === 0 ? (
         <div className="grid place-items-center gap-2 rounded-2xl border border-dashed border-line bg-surface px-6 py-14 text-center">
           <p className="font-semibold">Add a client first</p>
           <p className="text-sm text-muted">Every invoice is addressed to a client.</p>

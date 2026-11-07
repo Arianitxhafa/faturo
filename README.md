@@ -4,7 +4,7 @@
 
 > **Live:** **[faturo-two.vercel.app](https://faturo-two.vercel.app)** — click **Try the live demo** to explore a pre-filled workspace without signing up.
 >
-> **Status:** in development — foundation, clients & invoices, dashboard, redesign, demo and team done; billing and public links next. See [docs/PLAN.md](docs/PLAN.md) for the full roadmap.
+> **Status:** in development — foundation, clients & invoices, dashboard, redesign, demo, team and billing done; public links and CSV export next. See [docs/PLAN.md](docs/PLAN.md) for the full roadmap.
 
 ## ✨ Done so far
 - Email and password accounts with **Auth.js v5** — scrypt-hashed passwords, JWT sessions, generic login errors
@@ -24,8 +24,9 @@
 - **Teams** — invite people by private link (only a SHA-256 hash of the token is stored; links are single-use, bound to the invited email and expire in 7 days); roles **Owner / Admin / Member** enforced on the server; change roles, remove members, leave, revoke invites
 - **Multiple workspaces** — one account can belong to several businesses, with a workspace switcher
 - **Activity log** — who created, edited, sent, paid or deleted what (and team changes), written in the same atomic batch as the change; a timeline per invoice
+- **Plans & billing** — Free (5 invoices a month, just you) and Pro (€9/month, unlimited invoices and team), enforced on the server with upgrade prompts at each limit. Checkout, cancel at period end, resume, monthly renewals with billing history, and an automatic drop to Free after a cancellation — behind a provider interface. Stripe doesn't onboard businesses in Kosovo, so checkout runs as a clearly labelled **test-mode simulation** that accepts only Stripe's test cards (e.g. `4242 4242 4242 4242`) and stores just the card brand and last 4 digits
 - **Login rate limiting** — 5 failed attempts per account (and 30 per IP) in 15 minutes, enforced inside Auth.js so the API endpoint is protected too
-- **Unit tests** for money, VAT, discounts, parsing, overdue logic, role rules, invite tokens, redirects and rate limits (`npm test`)
+- **Unit tests** for money, VAT, discounts, parsing, overdue logic, role rules, invite tokens, redirects, rate limits, plan limits, billing periods and test cards (`npm test`)
 
 ## 🛠 Tech stack
 | Layer | Technology |

@@ -2,9 +2,10 @@ import "server-only";
 import { randomBytes, randomUUID } from "node:crypto";
 import { and, gte, inArray, like, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { activity, clients, invites, invoiceItems, invoices, memberships, users, workspaces, type ActivityMeta } from "@/db/schema";
+import { activity, clients, invites, invoiceItems, invoices, memberships, payments, subscriptions, users, workspaces, type ActivityMeta } from "@/db/schema";
 import { computeTotals, formatMoney, invoiceNumberLabel } from "@/lib/money";
 import { createToken } from "@/lib/tokens";
+import { addMonths, BILLING_CURRENCY, PRO_PRICE_CENTS } from "@/lib/plans";
 import { addDays, today } from "@/lib/invoice-status";
 import { hashPassword } from "@/lib/password";
 
@@ -129,6 +130,25 @@ export async function createDemoAccount() {
   }
   add(userId, "member.invited", at(addDays(now, -2), 11), { email: "accountant@arbendesign.example", role: "member" }, "invite");
 
+  // On Pro for the last few months: upgrade, then monthly renewals; the current period ends in a few weeks.
+  const proStart = addMonths(new Date(Date.now() - 10 * 86_400_000), -3);
+  const card = "Visa •••• 4242";
+  const proPrice = formatMoney(PRO_PRICE_CENTS, BILLING_CURRENCY);
+  const paymentRows = [0, 1, 2, 3].map((k) => ({
+    workspaceId,
+    amountCents: PRO_PRICE_CENTS,
+    currency: BILLING_CURRENCY,
+    description: k === 0 ? "Faturo Pro — monthly" : "Faturo Pro — monthly renewal",
+    cardLabel: card,
+    periodStart: addMonths(proStart, k),
+    periodEnd: addMonths(proStart, k + 1),
+    createdAt: addMonths(proStart, k),
+  }));
+  log.push({ workspaceId, actorId: userId, action: "billing.upgraded", entityType: "workspace", entityId: workspaceId, createdAt: proStart, meta: { total: proPrice } });
+  for (const k of [1, 2, 3]) {
+    log.push({ workspaceId, actorId: null, action: "billing.renewed", entityType: "workspace", entityId: workspaceId, createdAt: addMonths(proStart, k), meta: { total: proPrice } });
+  }
+
   const invoiceRows: (typeof invoices.$inferInsert)[] = [];
   const itemRows: (typeof invoiceItems.$inferInsert)[] = [];
   plan(now).forEach((p, i) => {
@@ -169,7 +189,7 @@ export async function createDemoAccount() {
 
   await db.batch([
     db.insert(users).values({ id: userId, name: "Demo User", email, passwordHash: await hashPassword(password) }),
-    db.insert(workspaces).values({ id: workspaceId, name: "Arbën Design Studio", currency: "EUR", address: "Rr. Nëna Terezë 12, Prishtinë", taxNumber: "811234567", iban: "XK00 0000 0000 0000 0000" }),
+    db.insert(workspaces).values({ id: workspaceId, plan: "pro", name: "Arbën Design Studio", currency: "EUR", address: "Rr. Nëna Terezë 12, Prishtinë", taxNumber: "811234567", iban: "XK00 0000 0000 0000 0000" }),
     db.insert(users).values(team.map((m) => ({ id: m.id, name: m.name, email: m.email, passwordHash: "disabled" }))),
     db.insert(memberships).values([
       { workspaceId, userId, role: "owner" as const, createdAt: at(start, 8) },
@@ -188,6 +208,16 @@ export async function createDemoAccount() {
     db.insert(invoices).values(invoiceRows),
     db.insert(invoiceItems).values(itemRows),
     db.insert(activity).values(log),
+    db.insert(subscriptions).values({
+      workspaceId,
+      provider: "simulated",
+      status: "active",
+      priceCents: PRO_PRICE_CENTS,
+      currentPeriodEnd: addMonths(proStart, 4),
+      cardLabel: card,
+      createdAt: proStart,
+    }),
+    db.insert(payments).values(paymentRows),
   ]);
 
   return { email, password };

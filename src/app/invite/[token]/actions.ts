@@ -8,6 +8,9 @@ import { invites, memberships, users } from "@/db/schema";
 import { requireUser, setCurrentWorkspace } from "@/lib/session";
 import { findInvite } from "@/lib/invites";
 import { activityInsert } from "@/lib/activity";
+import { getUsage } from "@/lib/billing";
+import { checkMemberLimit } from "@/lib/plans";
+import { workspaces } from "@/db/schema";
 
 export type AcceptState = { error?: string } | undefined;
 
@@ -28,6 +31,15 @@ export async function acceptInvite(token: string): Promise<AcceptState> {
     .from(memberships)
     .where(and(eq(memberships.workspaceId, invite.workspaceId), eq(memberships.userId, user.id)))
     .limit(1);
+
+  if (!existing) {
+    // The workspace may have dropped to Free since the invite was sent. The pending invite itself holds a seat.
+    const [ws] = await db.select({ plan: workspaces.plan }).from(workspaces).where(eq(workspaces.id, invite.workspaceId)).limit(1);
+    const usage = await getUsage(invite.workspaceId);
+    if (ws?.plan === "free" && !checkMemberLimit("free", usage.members).ok) {
+      return { error: `${found.workspaceName} is on the Free plan, which is just for its owner. Ask them to upgrade to Pro.` };
+    }
+  }
 
   const now = new Date();
   // The invite is marked used only if it's still pending, so a link can't be redeemed twice.

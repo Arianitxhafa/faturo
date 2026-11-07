@@ -14,7 +14,7 @@ const credentialsSchema = z.object({
   password: z.string().min(1).max(200),
 });
 
-const APP_PATHS = ["/app", "/onboarding"];
+const APP_PATHS = ["/app", "/onboarding", "/checkout"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 export const { handlers, auth, signIn, signOut } = NextAuth({

@@ -12,6 +12,7 @@ import { canChangeRole, canLeave, canRemove, invitableRoles } from "@/lib/permis
 import { activityInsert } from "@/lib/activity";
 import { createToken, INVITE_TTL_DAYS } from "@/lib/tokens";
 import { isUuid } from "@/lib/ids";
+import { memberLimit } from "@/lib/billing";
 
 export type InviteFormState = { error?: string; link?: string; email?: string; role?: Role } | undefined;
 type Result = { error?: string } | void;
@@ -43,6 +44,8 @@ export async function createInvite(_prev: InviteFormState, formData: FormData): 
     .where(and(eq(memberships.workspaceId, workspace.id), sql`lower(${users.email}) = ${email}`))
     .limit(1);
   if (member) return { error: `${email} is already on this team.` };
+  const limit = await memberLimit(workspace.id, workspace.plan);
+  if (!limit.ok) return { error: limit.message };
 
   const { token, hash } = createToken();
   const now = new Date();

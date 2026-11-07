@@ -162,6 +162,56 @@ export const loginAttempts = pgTable(
   (t) => [index("login_attempts_email_idx").on(t.email, t.createdAt), index("login_attempts_ip_idx").on(t.ip, t.createdAt)]
 );
 
+// ---- Billing ------------------------------------------------------------------
+// One subscription row per workspace. `workspaces.plan` mirrors it for fast limit checks.
+export const subscriptionStatusEnum = pgEnum("subscription_status", ["active", "canceled"]);
+
+export const subscriptions = pgTable("subscriptions", {
+  workspaceId: uuid("workspace_id")
+    .primaryKey()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(), // "simulated" today; "stripe" plugs into the same interface
+  status: subscriptionStatusEnum("status").notNull(),
+  priceCents: integer("price_cents").notNull(),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }).notNull(),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  cardLabel: text("card_label"), // e.g. "Visa •••• 4242" — never the card number
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// What Faturo charged the workspace (shown as billing history).
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    amountCents: integer("amount_cents").notNull(),
+    currency: text("currency").notNull().default("EUR"),
+    description: text("description").notNull(),
+    cardLabel: text("card_label"),
+    periodStart: timestamp("period_start", { withTimezone: true }).notNull(),
+    periodEnd: timestamp("period_end", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("payments_workspace_idx").on(t.workspaceId, t.createdAt)]
+);
+
+// A short-lived checkout, like a Stripe Checkout Session: created by the owner, completed once.
+export const checkoutSessions = pgTable("checkout_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  priceCents: integer("price_cents").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type User = typeof users.$inferSelect;
 export type Workspace = typeof workspaces.$inferSelect;
 export type Role = (typeof roleEnum.enumValues)[number];
@@ -171,3 +221,5 @@ export type InvoiceItem = typeof invoiceItems.$inferSelect;
 export type InvoiceStatus = (typeof invoiceStatusEnum.enumValues)[number];
 export type Invite = typeof invites.$inferSelect;
 export type Activity = typeof activity.$inferSelect;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type Payment = typeof payments.$inferSelect;

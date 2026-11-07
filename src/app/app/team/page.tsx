@@ -9,6 +9,9 @@ import { relativeTime } from "@/lib/activity-format";
 import { PageHeader } from "@/components/PageHeader";
 import { card } from "@/components/ui";
 import { Avatar } from "@/components/team/Avatar";
+import { UpgradeCard } from "@/components/billing/UpgradeCard";
+import { getUsage } from "@/lib/billing";
+import { checkMemberLimit } from "@/lib/plans";
 import { InviteForm } from "@/components/team/InviteForm";
 import { LeaveButton, RemoveMemberButton, RevokeInviteButton, RoleSelect } from "@/components/team/TeamControls";
 
@@ -42,6 +45,7 @@ export default async function TeamPage() {
           .orderBy(desc(invites.createdAt))
       : Promise.resolve([]),
   ]);
+  const seatsFull = workspace.plan === "free" && !checkMemberLimit("free", (await getUsage(workspace.id)).seats).ok;
   members.sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.joinedAt.getTime() - b.joinedAt.getTime());
   const now = new Date();
 
@@ -123,19 +127,25 @@ export default async function TeamPage() {
         </div>
 
         <aside className="grid content-start gap-6">
-          <section className={`${card} animate-rise p-5 [animation-delay:150ms]`} aria-labelledby="invite-heading">
-            <h2 id="invite-heading" className="font-display text-2xl">
-              Invite a teammate
-            </h2>
-            {canInvite ? (
-              <>
-                <p className="mt-1 mb-4 text-sm text-muted">You&apos;ll get a private link to send them.</p>
-                <InviteForm roles={invitableRoles(role)} />
-              </>
-            ) : (
-              <p className="mt-2 text-sm text-muted">Only owners and admins can invite people. Ask {workspace.name}&apos;s owner if someone should join.</p>
-            )}
-          </section>
+          {canInvite && seatsFull ? (
+            <div className="animate-rise [animation-delay:150ms]">
+              <UpgradeCard compact title="Bring your team" body="The Free plan is just for you. Pro adds unlimited teammates with roles and an activity log." isOwner={role === "owner"} />
+            </div>
+          ) : (
+            <section className={`${card} animate-rise p-5 [animation-delay:150ms]`} aria-labelledby="invite-heading">
+              <h2 id="invite-heading" className="font-display text-2xl">
+                Invite a teammate
+              </h2>
+              {canInvite ? (
+                <>
+                  <p className="mt-1 mb-4 text-sm text-muted">You&apos;ll get a private link to send them.</p>
+                  <InviteForm roles={invitableRoles(role)} />
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-muted">Only owners and admins can invite people. Ask {workspace.name}&apos;s owner if someone should join.</p>
+              )}
+            </section>
+          )}
 
           <section className={`${card} animate-rise p-5 [animation-delay:250ms]`} aria-labelledby="roles-heading">
             <h2 id="roles-heading" className="font-display text-2xl">

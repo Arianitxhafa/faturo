@@ -21,6 +21,11 @@ export const ACTIONS = [
   "member.role_changed",
   "member.removed",
   "member.left",
+  "billing.upgraded",
+  "billing.canceled",
+  "billing.resumed",
+  "billing.renewed",
+  "billing.downgraded",
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -79,6 +84,16 @@ export function describeActivity(action: string, meta: ActivityMeta, entityId: s
       return { tone: "danger", segments: [{ text: "removed " }, { text: s(meta.name), strong: true }, { text: " from the team" }] };
     case "member.left":
       return { tone: "danger", segments: [{ text: "left the team" }] };
+    case "billing.upgraded":
+      return { tone: "payment", segments: [{ text: "upgraded to " }, { text: "Pro", strong: true, href: "/app/billing" }, ...amount, { text: " ✨" }] };
+    case "billing.canceled":
+      return { tone: "danger", segments: [{ text: "cancelled Pro — it stays active until " }, { text: s(meta.date), strong: true }] };
+    case "billing.resumed":
+      return { tone: "payment", segments: [{ text: "resumed the " }, { text: "Pro", strong: true, href: "/app/billing" }, { text: " subscription" }] };
+    case "billing.renewed":
+      return { tone: "payment", segments: [{ text: "Pro renewed", strong: true, href: "/app/billing" }, { text: ` for another month${meta.total ? ` (${s(meta.total)})` : ""}` }] };
+    case "billing.downgraded":
+      return { tone: "danger", segments: [{ text: "The workspace moved to the " }, { text: "Free plan", strong: true, href: "/app/billing" }] };
     default:
       return { tone: "workspace", segments: [{ text: action }] };
   }

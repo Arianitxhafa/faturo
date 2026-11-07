@@ -11,6 +11,7 @@ import { computeTotals, parseMoney, parsePercent, parseQuantity, VAT_RATES_BPS }
 import { getInvoice, isUniqueViolation, nextInvoiceNumber } from "@/lib/invoices";
 import { isIsoDate, today } from "@/lib/invoice-status";
 import { activityInsert, invoiceMeta } from "@/lib/activity";
+import { invoiceLimit } from "@/lib/billing";
 import { invoiceNumberLabel } from "@/lib/money";
 import type { Action } from "@/lib/activity-format";
 
@@ -118,6 +119,9 @@ export async function saveInvoice(_prev: InvoiceFormState, formData: FormData): 
     redirect(`/app/invoices/${p.id}`);
   }
 
+  const limit = await invoiceLimit(workspace.id, workspace.plan);
+  if (!limit.ok) return { error: limit.message };
+
   const id = crypto.randomUUID();
   // Numbers are sequential per workspace; retry if another request grabbed the same number.
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -204,6 +208,9 @@ export async function duplicateInvoice(id: string) {
   const { user, workspace } = await requireMembership("admin");
   const found = await getInvoice(workspace.id, id);
   if (!found) return { error: "Invoice not found." };
+
+  const limit = await invoiceLimit(workspace.id, workspace.plan);
+  if (!limit.ok) return { error: limit.message };
 
   const { invoice, items } = found;
   const issue = today();

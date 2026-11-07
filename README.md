@@ -2,7 +2,7 @@
 
 **Invoicing for freelancers and small businesses.** Create clients and invoices, calculate VAT automatically, download professional PDFs and always know who has paid.
 
-> **Status:** in development — phases 1–2 of 6 done (foundation, clients & invoices). See [docs/PLAN.md](docs/PLAN.md) for the full roadmap.
+> **Status:** in development — phases 1–3 of 6 done (foundation, clients & invoices, dashboard). See [docs/PLAN.md](docs/PLAN.md) for the full roadmap.
 
 ## ✨ Done so far
 - Email and password accounts with **Auth.js v5** — scrypt-hashed passwords, JWT sessions, generic login errors
@@ -16,6 +16,7 @@
 - **Duplicate** an invoice in one click; delete drafts only
 - **PDF download** — server-rendered with `@react-pdf/renderer` and an embedded font, so ë, ç and € render correctly
 - **Money done right** — integer cents, quantities in hundredths, VAT in basis points; the server recomputes every total
+- **Dashboard** — revenue this month vs last month, unpaid and overdue totals, drafts, a 12-month revenue chart (accessible SVG with hover tooltips and a table for screen readers), top clients and recent invoices — all computed with SQL aggregates
 - **Unit tests** for money, VAT, discounts, parsing and overdue logic (`npm test`)
 
 ## 🛠 Tech stack

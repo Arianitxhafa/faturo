@@ -54,7 +54,7 @@ export default async function TeamPage() {
   const [tr, locale] = [await getTr(), await getLocale()];
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-6">
+    <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-6">
       <PageHeader
         label={tr("Team")}
         title={tr("Your team")}

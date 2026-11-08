@@ -53,7 +53,7 @@ export default async function Home() {
 
       <main>
         {/* Hero */}
-        <section className="mx-auto grid w-full max-w-6xl items-center gap-14 px-4 pt-12 pb-20 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:pt-20">
+        <section className="mx-auto grid w-full max-w-6xl items-center gap-14 px-4 pt-12 pb-20 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:pt-20">
           <div className="stagger">
             <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-muted shadow-card">
               <span className="size-1.5 rounded-full bg-brand" /> {t.badge}
@@ -233,7 +233,7 @@ export default async function Home() {
             {!signedIn && (
               <DemoButton
                 label={t.ctaDemo}
-                className="inline-flex items-center gap-2 text-sm font-medium text-[#ecebe6]/75 underline-offset-4 transition hover:text-[#ecebe6] hover:underline"
+                className="inline-flex min-h-10 items-center gap-2 text-sm font-medium text-[#ecebe6]/75 underline-offset-4 transition hover:text-[#ecebe6] hover:underline"
               />
             )}
           </div>

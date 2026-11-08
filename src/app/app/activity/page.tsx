@@ -20,7 +20,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
   const tr = await getTr();
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-6">
+    <div className="mx-auto grid max-w-3xl grid-cols-[minmax(0,1fr)] gap-6">
       <PageHeader label={tr("Activity")} title={tr("What happened")} description={tr("Everything your team did in {workspace}, newest first.", { workspace: workspace.name })} />
 
       <section className={`${card} animate-rise p-5 sm:p-7 [animation-delay:100ms]`}>

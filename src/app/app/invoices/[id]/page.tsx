@@ -32,7 +32,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   const stamp = (d: Date | null) => (d ? formatDate(d, locale) : null);
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-5">
+    <div className="mx-auto grid max-w-4xl grid-cols-[minmax(0,1fr)] gap-5">
       <PageHeader
         label={tr("Invoice")}
         back={{ href: "/app/invoices", label: tr("Invoices") }}

@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatMoney } from "@/lib/money";
 import { monthLabel } from "@/lib/months";
 import { useLocale, useTr } from "@/i18n/client";
 
 type Point = { month: string; cents: number; count: number };
 
-const W = 720;
 const H = 240;
 const PAD = { top: 12, right: 8, bottom: 28, left: 56 };
 const GAP = 2; // surface gap between adjacent bars
@@ -22,6 +21,17 @@ function niceMax(v: number) {
 
 export function RevenueChart({ data, currency }: { data: Point[]; currency: string }) {
   const [active, setActive] = useState<number | null>(null);
+  // Draw at the real width so the labels stay 11px on phones instead of shrinking with the SVG.
+  const ref = useRef<HTMLElement>(null);
+  const [W, setW] = useState(720);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setW(Math.max(260, Math.round(entry.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const every = W < 420 ? 3 : W < 560 ? 2 : 1; // month labels: every month, or every 2nd/3rd on narrow screens
   const tr = useTr();
   const locale = useLocale();
   const label = (month: string, year = false) => monthLabel(month, year, locale);
@@ -38,7 +48,7 @@ export function RevenueChart({ data, currency }: { data: Point[]; currency: stri
   const point = active !== null ? data[active] : null;
 
   return (
-    <figure className="relative m-0">
+    <figure ref={ref} className="relative m-0">
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={tr("Paid revenue per month for the last 12 months")} onMouseLeave={() => setActive(null)}>
         {ticks.map((t) => (
           <g key={t}>
@@ -66,9 +76,9 @@ export function RevenueChart({ data, currency }: { data: Point[]; currency: stri
                   style={{ transformBox: "fill-box", transformOrigin: "bottom", animation: `grow-y 0.8s cubic-bezier(0.22,1,0.36,1) ${250 + i * 45}ms both`, transition: "opacity 0.2s" }}
                 />
               )}
-              <text x={x + barW / 2} y={H - 8} textAnchor="middle" fill={isCurrent ? "var(--fg)" : "var(--muted)"} fontSize={11} fontWeight={isCurrent ? 600 : 400}>
+              {(data.length - 1 - i) % every === 0 && <text x={x + barW / 2} y={H - 8} textAnchor="middle" fill={isCurrent ? "var(--fg)" : "var(--muted)"} fontSize={11} fontWeight={isCurrent ? 600 : 400}>
                 {label(d.month)}
-              </text>
+              </text>}
               {/* Hit target: the whole column, bigger than the bar. */}
               <rect
                 x={PAD.left + i * slot}

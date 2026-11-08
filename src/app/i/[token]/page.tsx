@@ -65,7 +65,7 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
         </div>
       </header>
 
-      <main className="mx-auto grid w-full max-w-4xl gap-5 px-4 py-8 sm:px-6">
+      <main className="mx-auto grid w-full max-w-4xl grid-cols-[minmax(0,1fr)] gap-5 px-4 py-8 sm:px-6">
         <p role="status" className={`flex animate-rise items-center gap-2.5 rounded-2xl border px-4 py-3 text-sm font-medium ${banner.tone}`}>
           <Icon className="size-5 shrink-0" aria-hidden /> {banner.text}
         </p>

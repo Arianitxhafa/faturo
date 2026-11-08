@@ -39,7 +39,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const tr = await getTr();
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-6">
+    <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-6">
       <PageHeader
         label={tr("Dashboard")}
         title={
@@ -118,13 +118,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <RevenueChart data={monthly} currency={workspace.currency} />
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
         <section className={`${card} p-6 animate-rise [animation-delay:300ms]`}>
           <h2 className="font-display text-2xl">{tr("Top clients")}</h2>
           {topClients.length === 0 ? (
             <p className="mt-3 text-sm text-muted">{tr("Clients appear here once you send invoices.")}</p>
           ) : (
-            <ol className="mt-4 grid gap-4">
+            <ol className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4">
               {topClients.map((c, i) => (
                 <li key={c.id}>
                   <div className="flex items-baseline justify-between gap-3 text-sm">

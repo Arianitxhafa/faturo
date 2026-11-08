@@ -74,8 +74,8 @@ export function InvoiceEditor({ clients, currency, initial }: Props) {
       }}
       className="grid gap-6"
     >
-      <section className="grid gap-4 rounded-2xl border border-line bg-surface p-5 sm:grid-cols-3">
-        <label className="grid gap-1.5 text-sm font-medium sm:col-span-3">
+      <section className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-2xl border border-line bg-surface p-5 sm:grid-cols-2 xl:grid-cols-3">
+        <label className="col-span-full grid gap-1.5 text-sm font-medium">
           {tr("Client *")}
           <select value={clientId} onChange={(e) => setClientId(e.target.value)} required className={inputClass}>
             <option value="" disabled>
@@ -96,14 +96,14 @@ export function InvoiceEditor({ clients, currency, initial }: Props) {
           {tr("Due date")}
           <input type="date" value={dueDate} min={issueDate} onChange={(e) => setDueDate(e.target.value)} required className={inputClass} />
         </label>
-        <label className="grid gap-1.5 text-sm font-medium">
+        <label className="grid gap-1.5 text-sm font-medium sm:col-span-2 xl:col-span-1">
           {tr("Discount %")}
           <input inputMode="decimal" value={discount} onChange={(e) => setDiscount(e.target.value)} placeholder="0" className={inputClass} />
         </label>
       </section>
 
       <section className="rounded-2xl border border-line bg-surface p-5">
-        <div className="hidden grid-cols-[1fr_90px_120px_90px_110px_32px] gap-2 pb-2 text-xs font-medium tracking-wider text-muted uppercase md:grid">
+        <div className="hidden grid-cols-[minmax(0,1fr)_90px_120px_90px_110px_32px] gap-2 pb-2 text-xs font-medium tracking-wider text-muted uppercase lg:grid">
           <span>{tr("Description")}</span>
           <span>{tr("Qty")}</span>
           <span>{tr("Unit price")}</span>
@@ -111,9 +111,9 @@ export function InvoiceEditor({ clients, currency, initial }: Props) {
           <span className="text-right">{tr("Amount")}</span>
           <span />
         </div>
-        <ul className="grid gap-3 md:gap-2">
+        <ul className="grid gap-3 lg:gap-2">
           {lines.map((line, i) => (
-            <li key={line.key} className="grid grid-cols-2 gap-2 rounded-xl border border-line p-3 md:grid-cols-[1fr_90px_120px_90px_110px_32px] md:items-center md:border-0 md:p-0">
+            <li key={line.key} className="grid grid-cols-2 gap-2 rounded-xl border border-line p-3 lg:grid-cols-[minmax(0,1fr)_90px_120px_90px_110px_32px] lg:items-center lg:border-0 lg:p-0">
               <input
                 aria-label={tr("Line {n} description", { n: i + 1 })}
                 value={line.description}
@@ -121,7 +121,7 @@ export function InvoiceEditor({ clients, currency, initial }: Props) {
                 placeholder={tr("Website design")}
                 maxLength={300}
                 required
-                className={`${cell} col-span-2 md:col-span-1`}
+                className={`${cell} col-span-2 lg:col-span-1`}
               />
               <input aria-label={tr("Line {n} quantity", { n: i + 1 })} inputMode="decimal" value={line.quantity} onChange={(e) => update(line.key, { quantity: e.target.value })} className={cell} />
               <input aria-label={tr("Line {n} unit price", { n: i + 1 })} inputMode="decimal" value={line.unitPrice} onChange={(e) => update(line.key, { unitPrice: e.target.value })} placeholder="0.00" className={cell} />

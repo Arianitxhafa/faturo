@@ -33,7 +33,7 @@ export default async function ClientsPage() {
     .orderBy(asc(clients.name));
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1fr_320px]">
+    <div className="mx-auto grid max-w-6xl gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_320px]">
       <section>
         <p className="text-xs font-semibold tracking-[0.14em] text-brand uppercase">{tr("Clients")}</p>
         <h1 className="mt-2 font-display text-4xl leading-none tracking-tight sm:text-5xl">{tr("Your clients")}</h1>

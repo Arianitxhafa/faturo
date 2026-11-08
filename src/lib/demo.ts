@@ -114,7 +114,7 @@ export async function purgeOldDemos() {
 
 /** Creates a fresh demo user with a workspace full of realistic invoices. Returns credentials to sign in with. */
 export async function createDemoAccount(locale: "en" | "sq" = "en") {
-  const tr = (s: string) => (locale === "sq" ? (DEMO_SQ[s] ?? s) : s);
+  const inLocale = (s: string) => (locale === "sq" ? (DEMO_SQ[s] ?? s) : s);
   await purgeOldDemos();
   const [{ n }] = await db
     .select({ n: sql<number>`count(*)::int` })
@@ -192,7 +192,7 @@ export async function createDemoAccount(locale: "en" | "sq" = "en") {
       discountCents: t.discountCents,
       vatCents: t.vatCents,
       totalCents: t.totalCents,
-      notes: tr("Thank you for your business!"),
+      notes: inLocale("Thank you for your business!"),
       sentAt: p.status === "draft" ? null : at(p.issue, 10),
       paidAt: p.paidOn ? at(p.paidOn, 12) : null,
       createdBy: userId,
@@ -212,12 +212,12 @@ export async function createDemoAccount(locale: "en" | "sq" = "en") {
     if (views) log.push({ workspaceId, actorId: null, action: "invoice.viewed", createdAt: at(addDays(p.issue, 1), 8), meta, entityType: "invoice", entityId: id });
     if (p.paidOn) add(userId, "invoice.paid", at(p.paidOn, 12), meta, "invoice", id);
     p.lines.forEach(([description, quantityHundredths, unitPriceCents, vatRateBps], position) =>
-      itemRows.push({ invoiceId: id, position, description: tr(description), quantityHundredths, unitPriceCents, vatRateBps, lineTotalCents: t.lineTotals[position] })
+      itemRows.push({ invoiceId: id, position, description: inLocale(description), quantityHundredths, unitPriceCents, vatRateBps, lineTotalCents: t.lineTotals[position] })
     );
   });
 
   await db.batch([
-    db.insert(users).values({ id: userId, name: tr("Demo User"), email, passwordHash: await hashPassword(password) }),
+    db.insert(users).values({ id: userId, name: inLocale("Demo User"), email, passwordHash: await hashPassword(password) }),
     db.insert(workspaces).values({ id: workspaceId, plan: "pro", name: "Arbën Design Studio", currency: "EUR", address: "Rr. Nëna Terezë 12, Prishtinë", taxNumber: "811234567", iban: "XK00 0000 0000 0000 0000" }),
     db.insert(users).values(team.map((m) => ({ id: m.id, name: m.name, email: m.email, passwordHash: "disabled" }))),
     db.insert(memberships).values([

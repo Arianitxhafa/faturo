@@ -13,7 +13,7 @@ export async function InvoiceDocument({ workspace, client, invoice, items, stamp
   const { vatGroups } = computeTotals(items, invoice.discountBps);
 
   return (
-    <article className="relative overflow-hidden rounded-2xl bg-white p-6 text-[#14161a] shadow-[0_30px_70px_-35px_rgb(22_24_27/0.45)] ring-1 ring-black/5 animate-[rise_0.6s_0.1s_cubic-bezier(0.22,1,0.36,1)_both] sm:p-10">
+    <article className="relative overflow-hidden rounded-2xl bg-white p-5 text-[#14161a] shadow-[0_30px_70px_-35px_rgb(22_24_27/0.45)] ring-1 ring-black/5 animate-[rise_0.6s_0.1s_cubic-bezier(0.22,1,0.36,1)_both] sm:p-10">
       <header className="flex flex-wrap items-start justify-between gap-6">
         <div>
           <p className="text-xl font-bold">{workspace.name}</p>
@@ -43,7 +43,22 @@ export async function InvoiceDocument({ workspace, client, invoice, items, stamp
         </dl>
       </div>
 
-      <div className="mt-8 overflow-x-auto">
+      {/* Phones: one block per line, so the amount is never pushed off screen. */}
+      <ul className="mt-8 divide-y divide-[#e4e2da] border-y-2 border-y-[#14161a] text-sm sm:hidden">
+        {items.map((item) => (
+          <li key={item.id} className="flex items-start justify-between gap-3 py-2.5">
+            <span className="min-w-0">
+              <span className="block font-medium break-words">{item.description}</span>
+              <span className="block text-xs text-[#6b6f76] tabular-nums">
+                {formatQuantity(item.quantityHundredths)} × {money(item.unitPriceCents)} · {tr("VAT")} {formatRate(item.vatRateBps)}
+              </span>
+            </span>
+            <span className="shrink-0 font-medium tabular-nums">{money(item.lineTotalCents)}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-8 hidden overflow-x-auto sm:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b-2 border-[#14161a] text-left text-xs tracking-wider uppercase">

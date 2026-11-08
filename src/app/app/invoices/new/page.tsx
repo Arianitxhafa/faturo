@@ -31,7 +31,7 @@ export default async function NewInvoicePage({ searchParams }: { searchParams: P
   const tr = await getTr();
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-5">
+    <div className="mx-auto grid max-w-4xl grid-cols-[minmax(0,1fr)] gap-5">
       <div>
         <Link href="/app/invoices" className="text-sm text-muted hover:text-fg">
           {tr("← Invoices")}

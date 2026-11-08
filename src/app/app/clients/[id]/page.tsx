@@ -37,7 +37,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
     .orderBy(desc(invoices.number));
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_320px]">
+    <div className="mx-auto grid max-w-5xl gap-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_320px]">
       <section>
         <Link href="/app/clients" className="text-sm text-muted hover:text-fg">
           {tr("← All clients")}

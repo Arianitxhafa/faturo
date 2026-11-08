@@ -32,7 +32,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
   const tr = await getTr();
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-5">
+    <div className="mx-auto grid max-w-4xl grid-cols-[minmax(0,1fr)] gap-5">
       <div>
         <Link href={`/app/invoices/${id}`} className="text-sm text-muted hover:text-fg">
           ← {invoiceNumberLabel(invoice.number)}

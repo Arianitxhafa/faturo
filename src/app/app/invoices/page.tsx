@@ -51,7 +51,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
   const tabLabel = (t: Tab) => (t === "all" ? tr("All") : dict.status[t]);
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-5">
+    <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-semibold tracking-[0.14em] text-brand uppercase">{tr("Invoices")}</p>

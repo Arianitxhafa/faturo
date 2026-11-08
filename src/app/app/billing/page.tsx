@@ -58,7 +58,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   const short = (d: Date) => formatDate(d, locale);
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-6">
+    <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-6">
       <PageHeader label={tr("Billing")} title={tr("Plan & billing")} description={tr("{workspace} is on the {plan} plan.", { workspace: workspace.name, plan: pro ? "Pro" : tr("Free") })} />
 
       {upgraded && pro && (

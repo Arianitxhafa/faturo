@@ -117,25 +117,28 @@ export function RevenueChart({ data, currency }: { data: Point[]; currency: stri
       )}
 
       {/* Same data as a table for screen readers. */}
-      <table className="sr-only">
-        <caption>{tr("Paid revenue per month")}</caption>
-        <thead>
-          <tr>
-            <th>{tr("Month")}</th>
-            <th>{tr("Revenue")}</th>
-            <th>{tr("Paid invoices")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d) => (
-            <tr key={d.month}>
-              <td>{label(d.month, true)}</td>
-              <td>{formatMoney(d.cents, currency)}</td>
-              <td>{d.count}</td>
+      {/* Tables won't shrink to sr-only's 1px, so the wrapper is the hidden box (else it widens the page on small phones). */}
+      <div className="sr-only">
+        <table>
+          <caption>{tr("Paid revenue per month")}</caption>
+          <thead>
+            <tr>
+              <th>{tr("Month")}</th>
+              <th>{tr("Revenue")}</th>
+              <th>{tr("Paid invoices")}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((d) => (
+              <tr key={d.month}>
+                <td>{label(d.month, true)}</td>
+                <td>{formatMoney(d.cents, currency)}</td>
+                <td>{d.count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

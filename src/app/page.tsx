@@ -6,6 +6,7 @@ import { HeroInvoice } from "@/components/landing/HeroInvoice";
 import { primaryButton, secondaryButton } from "@/components/ui";
 import { DemoButton } from "@/components/DemoButton";
 import { Preferences } from "@/components/Preferences";
+import { LandingMenu } from "@/components/LandingMenu";
 import { getT } from "@/i18n/server";
 
 export default async function Home() {
@@ -16,7 +17,9 @@ export default async function Home() {
 
   return (
     <div className="paper-grain flex flex-1 flex-col overflow-x-clip">
-      <header className="sticky top-0 z-30 border-b border-transparent bg-bg/80 backdrop-blur-md">
+      {/* On phones the header is near-solid with no backdrop blur: re-blurring the grain and scroll animations behind it
+          on every frame made it shake while scrolling on iPhone. It also gets its own GPU layer. */}
+      <header className="sticky top-0 z-30 transform-gpu border-b border-line/50 bg-bg/95 sm:border-transparent sm:bg-bg/80 sm:backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
           <Logo />
           <nav className="hidden items-center gap-7 text-sm font-medium text-muted md:flex">
@@ -31,8 +34,40 @@ export default async function Home() {
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
-            <Preferences className="max-sm:hidden" />
+          {/* Phones: logo · theme/language · menu (like Rentigo). */}
+          <div className="flex items-center gap-2 sm:hidden">
+            <Preferences compact />
+            <LandingMenu openLabel={dict.nav.openMenu} closeLabel={dict.nav.closeMenu}>
+              <nav className="grid">
+                {[
+                  ["#features", t.nav.features],
+                  ["#how", t.nav.how],
+                  ["#pricing", t.nav.pricing],
+                  ["#faq", t.nav.faq],
+                ].map(([href, label]) => (
+                  <a key={href} href={href} className="flex min-h-12 items-center border-b border-line/70 text-base font-medium">
+                    {label}
+                  </a>
+                ))}
+              </nav>
+              {signedIn ? (
+                <Link href="/app" className={`${primaryButton} mt-4 w-full`}>
+                  {t.openApp} <ArrowRight className="size-4" />
+                </Link>
+              ) : (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Link href="/login" className={secondaryButton}>
+                    {t.logIn}
+                  </Link>
+                  <Link href="/signup" className={primaryButton}>
+                    {t.startFree}
+                  </Link>
+                </div>
+              )}
+            </LandingMenu>
+          </div>
+          <div className="flex items-center gap-2 max-sm:hidden">
+            <Preferences />
             {signedIn ? (
               <Link href="/app" className={primaryButton}>
                 {t.openApp} <ArrowRight className="size-4" />
@@ -243,7 +278,6 @@ export default async function Home() {
       <footer className="mt-auto border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-muted sm:px-6">
           <Logo />
-          <Preferences className="sm:hidden" />
           <span>
             © 2026 · {t.builtBy}{" "}
             <a href="https://arianitxhafa.github.io" className="font-semibold text-fg hover:text-brand">

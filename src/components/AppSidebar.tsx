@@ -157,7 +157,9 @@ export function AppSidebar({ workspaceId, workspaces, workspaceName, plan, role,
 
       {nav}
 
-      <Preferences className="mt-auto" />
+      <div className="mt-auto" aria-hidden />
+      {/* On phones the toggles live in the top bar instead. */}
+      <Preferences className="max-md:hidden" />
 
       <div className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-2.5">
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand">{initials}</span>
@@ -179,9 +181,12 @@ export function AppSidebar({ workspaceId, workspaces, workspaceName, plan, role,
       {/* Mobile top bar */}
       <div className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-bg/85 px-4 py-3 backdrop-blur md:hidden">
         <Logo href="/app" />
-        <button onClick={() => setOpen(true)} className="rounded-lg p-2 text-fg hover:bg-surface" aria-label={t.openMenu} aria-expanded={open}>
-          <Menu className="size-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Preferences compact />
+          <button onClick={() => setOpen(true)} className="rounded-lg p-2 text-fg hover:bg-surface" aria-label={t.openMenu} aria-expanded={open}>
+            <Menu className="size-5" />
+          </button>
+        </div>
       </div>
 
       {/* Mobile drawer */}

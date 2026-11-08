@@ -16,11 +16,12 @@ export default async function Home() {
   const t = dict.landing;
 
   return (
-    <div className="paper-grain flex flex-1 flex-col overflow-x-clip">
-      {/* On phones the header is near-solid with no backdrop blur: re-blurring the grain and scroll animations behind it
-          on every frame made it shake while scrolling on iPhone. It also gets its own GPU layer. */}
-      <header className="sticky top-0 z-30 transform-gpu border-b border-line/50 bg-bg/95 sm:border-transparent sm:bg-bg/80 sm:backdrop-blur-md">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
+    <div className="paper-grain landing-grain flex flex-1 flex-col overflow-x-clip">
+      {/* A fixed header (not sticky) with a spacer of the same height: iPhone Safari moves fixed layers on its scrolling
+          thread, so the bar stays still while sticky could shake. On phones it is solid with no backdrop blur. */}
+      <div aria-hidden className="h-[65px] shrink-0" />
+      <header className="fixed inset-x-0 top-0 z-30 h-[65px] border-b border-line/50 bg-bg sm:border-transparent sm:bg-bg/80 sm:backdrop-blur-md">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
           <Logo />
           <nav className="hidden items-center gap-7 text-sm font-medium text-muted md:flex">
             {[

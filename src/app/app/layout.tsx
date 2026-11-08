@@ -21,7 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         userEmail={user.email ?? ""}
         canCreate={hasRole(role, "admin")}
       />
-      <main className="paper-grain min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-10">
+      <main className="paper-grain touch-grain min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-10">
         {isDemoEmail(user.email) && (
           <div className="mx-auto mb-6 flex max-w-6xl animate-rise flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-gold/30 bg-gold/10 px-4 py-3 text-sm">
             <Sparkles className="size-4 shrink-0 text-gold" aria-hidden />

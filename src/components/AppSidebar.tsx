@@ -178,8 +178,9 @@ export function AppSidebar({ workspaceId, workspaces, workspaceName, plan, role,
 
   return (
     <>
-      {/* Mobile top bar */}
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-bg/85 px-4 py-3 backdrop-blur md:hidden">
+      {/* Mobile top bar: fixed (with a spacer) and without backdrop blur, so it stays still while scrolling on iPhone. */}
+      <div aria-hidden className="h-[61px] shrink-0 md:hidden" />
+      <div className="fixed inset-x-0 top-0 z-30 flex h-[61px] items-center justify-between border-b border-line bg-bg px-4 md:hidden">
         <Logo href="/app" />
         <div className="flex items-center gap-2">
           <Preferences compact />
